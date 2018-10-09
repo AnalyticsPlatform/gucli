@@ -13,9 +13,11 @@ import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
 object CategoryDiffer {
   def apply(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef): Props = Props(new CategoryDiffer(currentCat, prevCat, receiver))
 
-  case class CategoryEquals(currentCat: ActorRef, prevCat: ActorRef) extends Response
+  abstract class CategoryDifferResponse extends Response
 
-  case class CategoryDelta(deltaCat: ActorRef) extends Response
+  case class CategoryEquals(currentCat: ActorRef, prevCat: ActorRef) extends CategoryDifferResponse
+
+  case class CategoryDelta(deltaCat: ActorRef) extends CategoryDifferResponse
 
 }
 
