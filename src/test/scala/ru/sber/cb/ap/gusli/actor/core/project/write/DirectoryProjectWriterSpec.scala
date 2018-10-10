@@ -7,6 +7,7 @@ import org.scalatest
 import ru.sber.cb.ap.gusli.actor.core.ActorBaseTest
 import ru.sber.cb.ap.gusli.actor.projects.read.DirectoryProjectReader
 import ru.sber.cb.ap.gusli.actor.projects.read.DirectoryProjectReader.{ProjectReaded, ReadProject}
+import ru.sber.cb.ap.gusli.actor.projects.read.util.FileContentReader
 import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter
 import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter.{ProjectWrited, WriteProject}
 
@@ -23,7 +24,7 @@ class DirectoryProjectWriterSpec extends ActorBaseTest("DirectoryProjectSpec") {
     "projectReader reads project" should {
       "wait until project haven't been readed" in {
         directoryProjectReader ! ReadProject()
-        expectMsgPF() {
+        expectMsgPF(10 seconds) {
           case ProjectReaded(inputProject) => project = inputProject
         }
       }
@@ -43,6 +44,16 @@ class DirectoryProjectWriterSpec extends ActorBaseTest("DirectoryProjectSpec") {
         assert(pathLine.toFile.exists)
         assert(pathLine.toFile.isDirectory)
         assert(pathLine.toFile.listFiles.length == 4)
+      }
+
+      "and the category inside the project exists" in {
+        var pathCategFolder = Paths.get("./target/project_test-2/category/cb/ap/rb")
+        assert(pathCategFolder.toFile.exists)
+        assert(pathCategFolder.toFile.isDirectory)
+        assert(pathCategFolder.toFile.listFiles.length == 6)
+        pathCategFolder = pathCategFolder.resolve("wf-rb-vek555/init.hql")
+        val pathContent = FileContentReader.readFileContent(pathCategFolder)
+        println(pathContent)
       }
     }
   }
