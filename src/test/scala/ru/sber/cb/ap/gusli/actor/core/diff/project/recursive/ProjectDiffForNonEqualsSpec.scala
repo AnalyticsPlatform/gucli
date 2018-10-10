@@ -9,6 +9,8 @@ import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer.ProjectDelta
 import ru.sber.cb.ap.gusli.actor.projects.read.DirectoryProjectReader
 import ru.sber.cb.ap.gusli.actor.projects.read.DirectoryProjectReader.{ProjectReaded, ReadProject}
+import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter
+import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter.{ProjectWrited, WriteProject}
 
 class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEqualsSpec") {
   private val projectPath = Paths.get("./src/test/scala/ru/sber/cb/ap/gusli/actor/core/diff/project/recursive/data/project")
@@ -32,7 +34,11 @@ class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEquals
 
     "create ProjectDiffer" in {
       system.actorOf(ProjectDiffer(currentProject, prevProject, reciver.ref))
-      reciver.expectMsgAnyClassOf(classOf[ProjectDelta])
+      reciver.expectMsgPF() {
+        case ProjectDelta(p) =>
+          system.actorOf(ProjectWriter(p, Paths.get("./target"))) ! WriteProject()
+          expectMsg(ProjectWrited())
+      }
     }
   }
 }
