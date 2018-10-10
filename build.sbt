@@ -25,6 +25,8 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-parser" % "0.9.3",
   "io.circe" %% "circe-generic" % "0.9.3",
   "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % Test,
+  "com.typesafe.akka" %% "akka-http-testkit" % "10.1.5" % Test,
+  "com.typesafe.akka" %% "akka-http" % "10.1.5",
   "org.scalatest" % "scalatest_2.12" % "3.0.5" % Test,
   "com.fasterxml.jackson.module" % "jackson-module-scala_2.12" % "2.9.6",
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.9.6"
