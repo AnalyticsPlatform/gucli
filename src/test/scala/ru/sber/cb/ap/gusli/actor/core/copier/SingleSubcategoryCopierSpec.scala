@@ -4,9 +4,9 @@ import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import ru.sber.cb.ap.gusli.actor.core.Category._
 import ru.sber.cb.ap.gusli.actor.core._
-import ru.sber.cb.ap.gusli.actor.core.copier.SubcategoryCloner.SubcategoryCloneSuccessful
+import ru.sber.cb.ap.gusli.actor.core.copier.SingleSubcategoryCopier.SubcategoryCloneSuccessful
 
-class SubcategoryClonerSpec extends ActorBaseTest("SubcategoryClonerSpec") {
+class SingleSubcategoryCopierSpec extends ActorBaseTest("SingleSubcategoryCopierSpec") {
 
   private val currProjectProbe = TestProbe()
   private val prevProjectProbe = TestProbe()
@@ -26,7 +26,7 @@ class SubcategoryClonerSpec extends ActorBaseTest("SubcategoryClonerSpec") {
   }
   "SubcategoryCloner" must {
     "create Subcategory and send back SubcategoryCloneSuccessful(...)" in {
-      system.actorOf(SubcategoryCloner(currProjectProbe.ref, prevProjectProbe.ref, currentCat, subCat, receiverProbe.ref))
+      system.actorOf(SingleSubcategoryCopier(currProjectProbe.ref, prevProjectProbe.ref, currentCat, subCat, receiverProbe.ref))
       receiverProbe.expectMsgPF() {
         case SubcategoryCloneSuccessful(clonedCategory, fromCategory) =>
           assert(fromCategory == subCat)

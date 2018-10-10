@@ -4,17 +4,17 @@ import akka.actor.{ActorRef, Props}
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
 
 
-object SubcategoryCloner {
+object SingleSubcategoryCopier {
   def apply(toProject: ActorRef, fromProject: ActorRef, toCategory: ActorRef, fromCategory: ActorRef, receiver: ActorRef): Props =
-    Props(new SubcategoryCloner(toProject, fromProject, toCategory, fromCategory, receiver))
+    Props(new SingleSubcategoryCopier(toProject, fromProject, toCategory, fromCategory, receiver))
 
   case class SubcategoryCloneSuccessful(clonedCategory: ActorRef, fromCategory: ActorRef) extends Response
 
 }
 
-class SubcategoryCloner(toProject: ActorRef, fromProject: ActorRef, toCategory: ActorRef, fromCategory: ActorRef, receiver: ActorRef) extends BaseActor {
+class SingleSubcategoryCopier(toProject: ActorRef, fromProject: ActorRef, toCategory: ActorRef, fromCategory: ActorRef, receiver: ActorRef) extends BaseActor {
 
-  import SubcategoryCloner._
+  import SingleSubcategoryCopier._
   import ru.sber.cb.ap.gusli.actor.core.Category._
 
   override def preStart(): Unit = {

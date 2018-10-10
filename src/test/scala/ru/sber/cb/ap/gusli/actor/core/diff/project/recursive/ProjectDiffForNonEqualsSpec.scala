@@ -5,12 +5,16 @@ import java.nio.file.Paths
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import ru.sber.cb.ap.gusli.actor.core.ActorBaseTest
+import ru.sber.cb.ap.gusli.actor.core.Category.{GetSubcategories, SubcategorySet}
+import ru.sber.cb.ap.gusli.actor.core.Project.{CategoryRoot, GetCategoryRoot}
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer.ProjectDelta
 import ru.sber.cb.ap.gusli.actor.projects.read.DirectoryProjectReader
 import ru.sber.cb.ap.gusli.actor.projects.read.DirectoryProjectReader.{ProjectReaded, ReadProject}
 import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter
 import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter.{ProjectWrited, WriteProject}
+
+import concurrent.duration._
 
 class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEqualsSpec") {
   private val projectPath = Paths.get("./src/test/scala/ru/sber/cb/ap/gusli/actor/core/diff/project/recursive/data/project")
@@ -34,10 +38,19 @@ class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEquals
 
     "create ProjectDiffer" in {
       system.actorOf(ProjectDiffer(currentProject, prevProject, reciver.ref))
-      reciver.expectMsgPF() {
+      reciver.expectMsgPF(7 hour) {
         case ProjectDelta(p) =>
+          p ! GetCategoryRoot()
+          expectMsgPF(7 hour){
+            case CategoryRoot(root)=>
+              root ! GetSubcategories()
+              expectMsgPF(7 hour){
+                case SubcategorySet(set)=>
+                  println(set)
+              }
+          }
           system.actorOf(ProjectWriter(p, Paths.get("./target"))) ! WriteProject()
-          expectMsg(ProjectWrited())
+          expectMsg(7 hour, ProjectWrited())
       }
     }
   }
