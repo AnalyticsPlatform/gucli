@@ -1,8 +1,11 @@
 package ru.sber.cb.ap.gusli.actor.core.copier
 
 import akka.actor.{ActorRef, Props}
+import akka.util.Timeout
 import ru.sber.cb.ap.gusli.actor.core.copier.SingleSubcategoryCopier.SubcategoryCloneSuccessful
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
+
+import scala.concurrent.duration._
 
 object CategoryCopier {
   def apply(toProject: ActorRef, fromProject: ActorRef, toCategory: ActorRef, fromCategory: ActorRef, receiver: ActorRef): Props =
@@ -13,9 +16,11 @@ object CategoryCopier {
 }
 
 class CategoryCopier(toProject: ActorRef, fromProject: ActorRef, toCategory: ActorRef, fromCategory: ActorRef, receiver: ActorRef) extends BaseActor {
+  implicit val timeout = Timeout(5 hour)
 
   import CategoryCopier._
   import ru.sber.cb.ap.gusli.actor.core.Category._
+
   var subCatCount: Int = _
 
   override def preStart(): Unit = {
@@ -31,7 +36,7 @@ class CategoryCopier(toProject: ActorRef, fromProject: ActorRef, toCategory: Act
       else if (set.nonEmpty) {
         subCatCount = set.size
         for (c <- set) {
-          context.actorOf(SingleSubcategoryCopier(toProject, fromProject, toCategory, c, self))
+          context.actorOf(SingleSubcategoryCopier(toProject = toProject, fromProject = fromProject, toCategory = toCategory, fromCategory = c, receiver = self))
         }
       }
     case SubcategoryCloneSuccessful(cloned, fc) =>

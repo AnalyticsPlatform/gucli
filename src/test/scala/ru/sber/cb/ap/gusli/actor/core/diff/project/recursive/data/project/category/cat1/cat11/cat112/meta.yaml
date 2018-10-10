@@ -4,7 +4,7 @@ user: dreamer
 init:
 map:
 param:
-  p1: 1
+  p1: 2
   p2: I'm here
 stats:
 - 2

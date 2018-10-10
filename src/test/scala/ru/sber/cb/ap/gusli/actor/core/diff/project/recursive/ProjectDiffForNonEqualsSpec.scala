@@ -21,7 +21,7 @@ class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEquals
   private val projectCopyPath = Paths.get("./src/test/scala/ru/sber/cb/ap/gusli/actor/core/diff/project/recursive/data/project-copy")
   private var currentProject: ActorRef = _
   private var prevProject: ActorRef = _
-  private var reciver = TestProbe()
+  private val receiver = TestProbe()
 
   "Directory project differ" when {
     system.actorOf(DirectoryProjectReader(projectPath)) ! ReadProject()
@@ -37,8 +37,8 @@ class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEquals
     }
 
     "create ProjectDiffer" in {
-      system.actorOf(ProjectDiffer(currentProject, prevProject, reciver.ref))
-      reciver.expectMsgPF(7 hour) {
+      system.actorOf(ProjectDiffer(currentProject, prevProject, receiver.ref))
+      receiver.expectMsgPF(7 hour) {
         case ProjectDelta(p) =>
           p ! GetCategoryRoot()
           expectMsgPF(7 hour){
@@ -49,8 +49,8 @@ class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEquals
                   println(set)
               }
           }
-          system.actorOf(ProjectWriter(p, Paths.get("./target"))) ! WriteProject()
-          expectMsg(7 hour, ProjectWrited())
+          system.actorOf(ProjectWriter(p, Paths.get("./target/ProjectDiffForNonEqualsSpec"))) ! WriteProject()
+          expectMsg(ProjectWrited())
       }
     }
   }
