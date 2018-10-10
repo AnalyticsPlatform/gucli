@@ -35,6 +35,15 @@ class DirectoryProjectWriterSpec extends ActorBaseTest("DirectoryProjectSpec") {
         directoryProjectWriter ! WriteProject()
         expectMsg(10 seconds, ProjectWrited())
       }
+  
+      "and project folder exists" in {
+        val projFolder = writePath.resolve("project_test-2")
+        assert(projFolder.toFile.exists)
+        val pathLine = Paths.get("./target/project_test-2/entity/105000000 entity-root/105060000 entity-parent/105067000 entity-children")
+        assert(pathLine.toFile.exists)
+        assert(pathLine.toFile.isDirectory)
+        assert(pathLine.toFile.listFiles.length == 4)
+      }
     }
   }
 }
