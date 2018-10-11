@@ -1,42 +1,43 @@
 package ru.sber.cb.ap.gusli.actor.core.extractor
 
 import akka.actor.{ActorRef, Props}
+import ru.sber.cb.ap.gusli.actor.core.Category.{CategoryMetaResponse, GetCategoryMeta, GetSubcategories, SubcategorySet}
+import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
 import ru.sber.cb.ap.gusli.actor.core.Entity.{EntityMetaResponse, GetEntityMeta}
 import ru.sber.cb.ap.gusli.actor.core.Workflow.{EntityList, GetEntityList}
 import ru.sber.cb.ap.gusli.actor.core.extractor.EntityIdExtractor.EntityIdExtracted
-import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
+import ru.sber.cb.ap.gusli.actor.core.extractor.SubcategoryExtractor.SubcategoryExtracted
 
-object EntityIdExtractor {
-  def apply(wf: ActorRef, receiver: ActorRef): Props = Props(new EntityIdExtractor(wf, receiver))
+import scala.collection.immutable.HashMap
 
-  case class EntityIdExtracted(ids: Set[Long]) extends Response
+
+object SubcategoryExtractor {
+  def apply(category: ActorRef, receiver: ActorRef): Props = Props(new SubcategoryExtractor(category, receiver))
+
+  case class SubcategoryExtracted(category: ActorRef, subs: Map[String, ActorRef]) extends Response
 
 }
 
-class EntityIdExtractor(wf: ActorRef, receiver: ActorRef) extends BaseActor {
-  var countDown: Long = _
-  var entityIds: Set[Long] = Set.empty
+class SubcategoryExtractor(category: ActorRef, receiver: ActorRef) extends BaseActor {
+  private var subCount = 0
+  private var subs: HashMap[String, ActorRef] = HashMap.empty
 
   override def preStart(): Unit = {
-    wf ! GetEntityList()
+    category ! GetSubcategories()
   }
 
   override def receive: Receive = {
-    case EntityList(entities) =>
-      if (entities.isEmpty) {
-        receiver ! EntityIdExtracted(Set.empty)
+    case SubcategorySet(set) =>
+      subCount = set.size
+      for (c <- set)
+        c ! GetCategoryMeta()
+    case CategoryMetaResponse(m) =>
+      subs += m.name -> sender()
+      subCount -= 1
+      if (subCount == 0) {
+        receiver ! SubcategoryExtracted(category, subs)
         context.stop(self)
       }
-      else {
-        countDown = entities.size
-        entities.foreach(_ ! GetEntityMeta())
-      }
-    case EntityMetaResponse(m) =>
-      entityIds = entityIds + m.id
-      countDown -= 1
-      if (countDown == 0) {
-        receiver ! EntityIdExtracted(entityIds)
-        context.stop(self)
-      }
+
   }
 }
