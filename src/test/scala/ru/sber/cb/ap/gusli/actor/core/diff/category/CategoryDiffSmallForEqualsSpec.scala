@@ -40,6 +40,7 @@ class CategoryDiffSmallForEqualsSpec extends ActorBaseTest("CategoryDiffSmallFor
       prevCat1 = s
   }
 
+  //todo: The evil is here
   "create CategoryDiffer" in {
     system.actorOf(CategoryDiffer(currentCatRoot, prevCatRoot, receiver.ref))
     receiver.expectMsgClass(classOf[CategoryEquals])

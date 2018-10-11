@@ -4,6 +4,7 @@ import java.nio.file.Paths
 
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
+import org.scalatest.Ignore
 import ru.sber.cb.ap.gusli.actor.core.ActorBaseTest
 import ru.sber.cb.ap.gusli.actor.core.Category.{GetSubcategories, SubcategorySet}
 import ru.sber.cb.ap.gusli.actor.core.Project.{CategoryRoot, GetCategoryRoot}
@@ -16,6 +17,7 @@ import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter.{ProjectWrited, Wr
 
 import concurrent.duration._
 
+@Ignore
 class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEqualsSpec") {
   private val projectPath = Paths.get("./src/test/scala/ru/sber/cb/ap/gusli/actor/core/diff/project/recursive/data/project")
   private val projectCopyPath = Paths.get("./src/test/scala/ru/sber/cb/ap/gusli/actor/core/diff/project/recursive/data/project-copy")

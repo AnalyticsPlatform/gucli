@@ -41,11 +41,11 @@ class CategoryDiffSmallSpec extends ActorBaseTest("CategoryDiffSmallSpec") {
       prevCat1 = s
   }
 
-//  currCat1 ! AddSubcategory(CategoryMetaDefault("cat11"))
-//  expectMsgPF() {
-//    case SubcategoryCreated(s) =>
-//      currCat11 = s
-//  }
+  currCat1 ! AddSubcategory(CategoryMetaDefault("cat11"))
+  expectMsgPF() {
+    case SubcategoryCreated(s) =>
+      currCat11 = s
+  }
 
   "create CategoryDiffer" in {
     system.actorOf(CategoryDiffer(currentCatRoot, prevCatRoot, receiver.ref))

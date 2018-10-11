@@ -88,31 +88,31 @@ class ProjectDiffer(currentProject: ActorRef, prevProject: ActorRef, receiver: A
   def copyCategoryDelta(): Unit = {
     var set:Set[ActorRef]=null
     for (proj <- projectDiff; prevRoot <- prevRootCat; root <- rootCatDiff) {
-      (root ? GetSubcategories()).map(x=>x.asInstanceOf[SubcategorySet]).map(
-        x=>{
-          log.debug("{}",x)
-          set=x.actorSet
-          (x.actorSet.head ? GetSubcategories()).map(x=>{
-            log.debug("{}",x)
-          })
-        }
-      )
-      (root ? GetCategoryMeta()).map(
-        x=>{
-          log.debug("{}",x)
-        }
-      )
+//      (root ? GetSubcategories()).map(x=>x.asInstanceOf[SubcategorySet]).map(
+//        x=>{
+//          log.debug("{}",x)
+//          set=x.actorSet
+//          (x.actorSet.head ? GetSubcategories()).map(x=>{
+//            log.debug("{}",x)
+//          })
+//        }
+//      )
+//      (root ? GetCategoryMeta()).map(
+//        x=>{
+//          log.debug("{}",x)
+//        }
+//      )
       context.actorOf(CategoryCopier(toProject = proj, fromProject = prevProject, toCategory = root, fromCategory = prevRoot, receiver = self))
-      for (c<-set) {
-        (c ? GetCategoryMeta()).map(x=>x.asInstanceOf[CategoryMetaResponse]).map(
-          x=>{
-            log.debug("{}",x)
-            (root ? AddSubcategory(x.meta)).map(x=>{
-              log.debug("{}",x)
-            })
-          }
-        )
-      }
+//      for (c<-set) {
+//        (c ? GetCategoryMeta()).map(x=>x.asInstanceOf[CategoryMetaResponse]).map(
+//          x=>{
+//            log.debug("{}",x)
+//            (root ? AddSubcategory(x.meta)).map(x=>{
+//              log.debug("{}",x)
+//            })
+//          }
+//        )
+//      }
     }
   }
 }

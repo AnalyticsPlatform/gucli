@@ -7,7 +7,7 @@ import ru.sber.cb.ap.gusli.actor.core._
 import ru.sber.cb.ap.gusli.actor.core.diff.CategoryDiffer
 import ru.sber.cb.ap.gusli.actor.core.diff.CategoryDiffer.CategoryDelta
 
-class CategoryDiffForEmptyPrevSpec extends ActorBaseTest("CategoryDiffWithChildrenForNonEqualsSpec") {
+class CategoryDiffForEmptyPrevSpec extends ActorBaseTest("CategoryDiffForEmptyPrevSpec") {
 
   private val projectProbe = TestProbe()
   private val projectProbe2 = TestProbe()

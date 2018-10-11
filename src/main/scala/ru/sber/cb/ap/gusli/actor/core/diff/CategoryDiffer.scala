@@ -14,9 +14,6 @@ import ru.sber.cb.ap.gusli.actor.core.extractor.SubcategoryExtractor.Subcategory
 import ru.sber.cb.ap.gusli.actor.core.{Category, CategoryMeta}
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response, core}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-
 object CategoryDiffer {
   def apply(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef): Props = Props(new CategoryDiffer(currentCat, prevCat, receiver))
 
@@ -29,8 +26,6 @@ object CategoryDiffer {
 }
 
 class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef) extends BaseActor {
-  implicit val timeout = Timeout(5 second)
-
   private var currProject: Option[ActorRef] = None
   private var deltaCatMeta: Option[CategoryMeta] = None
   private var categoryDelta: Option[ActorRef] = None
@@ -89,7 +84,6 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
   def createCategoryDelta(): Unit = {
     for (p <- currProject; m <- deltaCatMeta){
       categoryDelta = Some(context.system.actorOf(Category(m, p)))
-      receiver ! CategoryDelta(categoryDelta.get)
     }
   }
 
@@ -126,13 +120,6 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
         val c = curr(n)
         val p = prev(n)
         context.actorOf(CategoryDiffer(c, p, self))
-
-        (c ? GetSubcategories()).map(x => {
-          core.cprint("curr=" + x)
-        })
-        (p ? GetSubcategories()).map(x => {
-          core.cprint("prev=" + x)
-        })
       }
     }
   }
@@ -150,26 +137,29 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
         core.cprint("isNewSubcategoryEmpty=" + isNewSubcategoryEmpty)
         core.cprint("isEqualsSubcategoryEmpty=" + isEqualsSubcategoryEmpty)
 
-        (categoryDelta.get ? GetSubcategories()).map {
-          case SubcategorySet(set) =>
-            if (set.isEmpty) {
-              if (isCategoryMetaEquals){
+        val delta = categoryDelta.get
+        delta ! GetSubcategories()
+        context.become({
+          case SubcategorySet(set)=>
+            if (set.isEmpty){
+              if (isCategoryMetaEquals) {
+                core.categoryPrinter(currentCat)
+                core.categoryPrinter(prevCat)
                 receiver ! CategoryEquals(currentCat, prevCat)
                 context.stop(self)
               }
-              else
-                {
-                  val delta = categoryDelta.get
-                  receiver ! CategoryDelta(delta)
-                  //receiver ! CategoryDelta(categoryDelta.get)
-                  //context.stop(self)
-                }
+              else {
+                core.categoryPrinter(delta)
+                receiver ! CategoryDelta(delta)
+                context.stop(self)
+              }
             }
-            else if (set.nonEmpty) {
-              receiver ! CategoryDelta(categoryDelta.get)
+            else if (set.nonEmpty){
+              core.categoryPrinter(delta)
+              receiver ! CategoryDelta(delta)
               context.stop(self)
             }
-        }
+        })
       }
     }
   }

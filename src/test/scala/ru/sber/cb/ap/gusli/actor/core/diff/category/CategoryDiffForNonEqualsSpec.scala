@@ -4,7 +4,7 @@ import akka.testkit.TestProbe
 import ru.sber.cb.ap.gusli.actor.core.Category.{CategoryMetaResponse, CreateWorkflow, GetCategoryMeta, WorkflowCreated}
 import ru.sber.cb.ap.gusli.actor.core._
 import ru.sber.cb.ap.gusli.actor.core.diff.CategoryDiffer
-
+import concurrent.duration._
 class CategoryDiffForNonEqualsSpec extends ActorBaseTest("CategoryDiffForNonEqualsSpec") {
 
   import ru.sber.cb.ap.gusli.actor.core.diff.CategoryDiffer._
@@ -19,34 +19,33 @@ class CategoryDiffForNonEqualsSpec extends ActorBaseTest("CategoryDiffForNonEqua
     val prevCat = system.actorOf(Category(prevMeta, projectProbe.ref))
 
     system.actorOf(CategoryDiffer(currentCat, prevCat, receiverProbe.ref))
-    expectNoMessage()
 
-//    receiverProbe.expectMsgPF() {
-//      case CategoryDelta(delta) =>
-//        delta ! GetCategoryMeta()
-//        expectMsg(CategoryMetaResponse(currMeta))
-//    }
-
-//    expectNoMessage()
-  }
-
-
-  "A CategoryDiffer for category with same meta but contains workflows with differ meta must return CategoryDelta" in {
-    val prevCat = system.actorOf(Category(currMeta, projectProbe.ref))
-    currentCat ! CreateWorkflow(WorkflowMetaDefault("test", Map("new.sql" -> "select 1")))
-    expectMsgAnyClassOf(classOf[WorkflowCreated])
-    prevCat ! CreateWorkflow(WorkflowMetaDefault("test", Map("old.sql" -> "select 1")))
-    expectMsgAnyClassOf(classOf[WorkflowCreated])
-
-    system.actorOf(CategoryDiffer(currentCat, prevCat, receiverProbe.ref))
     receiverProbe.expectMsgPF() {
       case CategoryDelta(delta) =>
         delta ! GetCategoryMeta()
         expectMsg(CategoryMetaResponse(currMeta))
     }
 
-    expectNoMessage()
+    receiverProbe.expectNoMessage(5 second)
   }
+
+
+//  "A CategoryDiffer for category with same meta but contains workflows with differ meta must return CategoryDelta" in {
+//    val prevCat = system.actorOf(Category(currMeta, projectProbe.ref))
+//    currentCat ! CreateWorkflow(WorkflowMetaDefault("test", Map("new.sql" -> "select 1")))
+//    expectMsgAnyClassOf(classOf[WorkflowCreated])
+//    prevCat ! CreateWorkflow(WorkflowMetaDefault("test", Map("old.sql" -> "select 1")))
+//    expectMsgAnyClassOf(classOf[WorkflowCreated])
+//
+//    system.actorOf(CategoryDiffer(currentCat, prevCat, receiverProbe.ref))
+//    receiverProbe.expectMsgPF() {
+//      case CategoryDelta(delta) =>
+//        delta ! GetCategoryMeta()
+//        expectMsg(CategoryMetaResponse(currMeta))
+//    }
+//
+//    expectNoMessage()
+//  }
 
 }
 
