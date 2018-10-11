@@ -1,15 +1,21 @@
 package ru.sber.cb.ap.gusli.actor.core.diff
 
 import akka.actor.{ActorRef, Props}
-import akka.util.Timeout
-import ru.sber.cb.ap.gusli.actor.core.{Category, CategoryMeta, _}
 import ru.sber.cb.ap.gusli.actor.core.Category._
+import ru.sber.cb.ap.gusli.actor.core.clone.CategoryCloner.CategoryCloneSuccessfully
+import ru.sber.cb.ap.gusli.actor.core.clone.{CategoryCloner, CategorySetCloner}
+import ru.sber.cb.ap.gusli.actor.core.clone.CategorySetCloner.CategorySetCloneSuccessfully
 import ru.sber.cb.ap.gusli.actor.core.diff.CategoryDiffer.{CategoryDelta, CategoryEquals}
-import ru.sber.cb.ap.gusli.actor.core.diff.CategoryMetaDiffer.{AbstractCategoryMetaResponse, CategoryMetaDelta, CategoryMetaEquals}
-import ru.sber.cb.ap.gusli.actor.core.diff.SubCategoryMetaDiffer.{SubCategoryMetaDelta, SubCategoryMetaEquals}
-import ru.sber.cb.ap.gusli.actor.core.diff.WorkflowFromCategoryDiffer.{WorkflowFromCategoryDelta, WorkflowFromCategoryEquals, WorkflowFromCategoryResponse}
+import ru.sber.cb.ap.gusli.actor.core.diff.CategoryMetaDiffer.{CategoryMetaDelta, CategoryMetaEquals}
+import ru.sber.cb.ap.gusli.actor.core.extractor.SubcategoryExtractor
+import ru.sber.cb.ap.gusli.actor.core.extractor.SubcategoryExtractor.SubcategoryExtracted
+import ru.sber.cb.ap.gusli.actor.core.{Category, CategoryMeta}
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
+  import akka.pattern.ask
+  import akka.util.Timeout
 
+  import concurrent.duration._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
 object CategoryDiffer {
   def apply(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef): Props = Props(new CategoryDiffer(currentCat, prevCat, receiver))
@@ -23,121 +29,113 @@ object CategoryDiffer {
 }
 
 class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef) extends BaseActor {
-  import akka.pattern.ask
-  import akka.util.Timeout
-
-  import concurrent.duration._
-  import scala.concurrent.ExecutionContext.Implicits.global
   implicit val timeout = Timeout(5 hour)
 
-  var subMetaDelta: Option[Set[CategoryMeta]] = None
-  var subMetaCount = 0
   private var currProject: Option[ActorRef] = None
-  private var currentMeta: Option[CategoryMeta] = None
-  private var categoryMetaResponse: Option[AbstractCategoryMetaResponse] = None
-  private var workflowFromCategory: Option[WorkflowFromCategoryResponse] = None
-  private var deltaCat: Option[ActorRef] = None
-  private var isSubcategoryCompared = false
+  private var deltaCatMeta: Option[CategoryMeta] = None
+  private var categoryDelta: Option[ActorRef] = None
+  private var currMap: Option[Map[String, ActorRef]] = None
+  private var prevMap: Option[Map[String, ActorRef]] = None
+  private var newSubcategoryCopied = false
+  private var equalsSubcategoryCopied = false
+  private var subcategoriesToCompareCount = 0
+  private var isCategoryMetaEquals = false
+  private var isNewSubcategoryEmpty = false
+  private var isEqualsSubcategoryEmpty = false
 
   override def preStart(): Unit = {
     currentCat ! GetProject()
-    currentCat ! GetCategoryMeta()
     context.actorOf(CategoryMetaDiffer(currentCat, prevCat, self))
-    context.actorOf(WorkflowFromCategoryDiffer(currentCat, prevCat, self))
-    context.actorOf(SubCategoryMetaDiffer(currentCat, prevCat, self))
+    context.actorOf(SubcategoryExtractor(currentCat, self))
+    context.actorOf(SubcategoryExtractor(prevCat, self))
   }
 
   override def receive: Receive = {
     case ProjectResponse(p) =>
       currProject = Some(p)
-      checkFinish()
-
-    case CategoryMetaResponse(m) =>
-      val cat = sender()
+      createCategoryDelta()
+    case CategoryMetaDelta(d) =>
+      deltaCatMeta = Some(d)
+      createCategoryDelta()
+    case CategoryMetaEquals(_, _, m) =>
+      deltaCatMeta = Some(m)
+      isCategoryMetaEquals = true
+      createCategoryDelta()
+    case SubcategoryExtracted(cat, map) =>
       if (cat == currentCat)
-        currentMeta = Some(m)
-      else
-        throw new RuntimeException(s"Unknown sender:${sender()}")
+        currMap = Some(map)
+      else if (cat == prevCat)
+        prevMap = Some(map)
+      else throw new RuntimeException(s"Unexpectable `SubcategoryExtracted` sender $sender")
+      compareSubcategories()
 
+    case CategorySetCloneSuccessfully() =>
+      newSubcategoryCopied = true
       checkFinish()
-
-    case r: AbstractCategoryMetaResponse =>
-      categoryMetaResponse = Some(r)
+    case CategoryEquals(_, _) =>
+      subcategoriesToCompareCount -= 1
+      equalsSubcategoryCopied = subcategoriesToCompareCount == 0
       checkFinish()
-
-    case r: WorkflowFromCategoryResponse =>
-      workflowFromCategory = Some(r)
-      checkFinish()
-
-    case SubCategoryMetaEquals(_, _) =>
-      isSubcategoryCompared = true
-      subMetaDelta = Some(Set.empty)
-      checkFinish()
-    case SubCategoryMetaDelta(delta) =>
-      subMetaDelta = Some(delta)
-      subMetaCount = delta.size
-      checkFinish()
-    case SubcategoryCreated(_) =>
-      subMetaCount -= 1
-      isSubcategoryCompared = subMetaCount == 0
+    case CategoryDelta(d)=>
+      context.actorOf(CategoryCloner(currentCat, d, self))
+    case CategoryCloneSuccessfully()=>
+      subcategoriesToCompareCount -= 1
+      equalsSubcategoryCopied = subcategoriesToCompareCount == 0
       checkFinish()
   }
 
+  def createCategoryDelta(): Unit = {
+    for (p <- currProject; m <- deltaCatMeta)
+      categoryDelta = Some(context.system.actorOf(Category(m, p)))
+  }
+
+  def compareSubcategories(): Unit = {
+    for (d <- categoryDelta; c <- currMap; p <- prevMap) {
+      copyNewSubcategories(d, c, p)
+      compareEqualsSubcategories(d, c, p)
+      checkFinish()
+    }
+  }
+
+  def copyNewSubcategories(copyTo: ActorRef, curr: Map[String, ActorRef], prev: Map[String, ActorRef]): Unit = {
+    val news = curr.keySet diff prev.keySet
+    if (news.isEmpty) {
+      newSubcategoryCopied = true
+      isNewSubcategoryEmpty = true
+    }
+    else if (news.nonEmpty) {
+      val newCats = for (n <- news) yield curr(n)
+
+      context.actorOf(CategorySetCloner(copyTo, newCats, self))
+    }
+  }
+
+  def compareEqualsSubcategories(copyTo: ActorRef, curr: Map[String, ActorRef], prev: Map[String, ActorRef]): Unit = {
+    val eq = curr.keySet intersect prev.keySet
+    if (eq.isEmpty) {
+      equalsSubcategoryCopied = true
+      isEqualsSubcategoryEmpty = true
+    }
+    else if (eq.nonEmpty){
+      subcategoriesToCompareCount = eq.size
+      for (n <- eq) {
+        val c = curr(n)
+        val d = prev(n)
+        context.actorOf(CategoryDiffer(c, d, self))
+      }
+    }
+  }
 
   def checkFinish(): Unit = {
-    (currProject, categoryMetaResponse, currentMeta) match {
-      case (Some(project), Some(resp), Some(curMeta)) =>
-        if (deltaCat.isEmpty)
-          resp match {
-            case CategoryMetaEquals(_, _) =>
-              deltaCat = Some(context.system.actorOf(Category(curMeta, project)))
-
-            case CategoryMetaDelta(delta) =>
-              deltaCat = Some(context.system.actorOf(Category(delta, project)))
-          }
-      case _ =>
-        log.debug("project or current category meta, or meta not compared yet")
+    if (newSubcategoryCopied && equalsSubcategoryCopied) {
+      if (isCategoryMetaEquals && isNewSubcategoryEmpty && isEqualsSubcategoryEmpty) {
+        receiver ! CategoryEquals(currentCat, prevCat)
+        context.stop(self)
+      }
+      else {
+        receiver ! CategoryDelta(categoryDelta.get)
+        context.stop(self)
+      }
     }
-
-    if (!isSubcategoryCompared)
-      for (dc <- deltaCat; metaDelta <- subMetaDelta) {
-        for (m <- metaDelta) {
-          cprint(m)
-
-//          dc ! AddSubcategory(m)
-
-//          (dc ? GetCategoryMeta()).map(x=>{
-//            cprint(x)
-//          })
-
-          (dc ? AddSubcategory(m)).map(x=>{
-            cprint(x)
-            self ! x
-          })
-        }
-      }
-
-    if (isSubcategoryCompared)
-      for (dc <- deltaCat; wfDelta <- workflowFromCategory; resp: AbstractCategoryMetaResponse <- categoryMetaResponse) {
-        wfDelta match {
-          case WorkflowFromCategoryDelta(wd) =>
-            dc ! AddWorkflows(wd)
-            receiver ! CategoryDelta(dc)
-            context.stop(self)
-          case WorkflowFromCategoryEquals(_, _) =>
-            resp match {
-              case CategoryMetaEquals(_, _) =>
-                if (subMetaDelta.get.isEmpty)
-                  receiver ! CategoryEquals(currentCat, prevCat)
-                else
-                  receiver ! CategoryDelta(dc)
-
-              case CategoryMetaDelta(_) =>
-                receiver ! CategoryDelta(dc)
-            }
-
-            context.stop(self)
-        }
-      }
   }
 }

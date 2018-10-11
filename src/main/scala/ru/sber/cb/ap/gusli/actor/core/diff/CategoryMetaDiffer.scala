@@ -11,7 +11,7 @@ object CategoryMetaDiffer {
 
   abstract class AbstractCategoryMetaResponse extends Response
 
-  case class CategoryMetaEquals(currentCat: ActorRef, prevCat: ActorRef) extends AbstractCategoryMetaResponse
+  case class CategoryMetaEquals(currentCat: ActorRef, prevCat: ActorRef, meta: CategoryMeta) extends AbstractCategoryMetaResponse
 
   case class CategoryMetaDelta(deltaCat: CategoryMeta) extends AbstractCategoryMetaResponse
 
@@ -40,7 +40,7 @@ class CategoryMetaDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: Acto
 
       for (c <- currentMeta; p <- prevMeta) {
         if (c == p)
-          receiver ! CategoryMetaEquals(currentCat, prevCat)
+          receiver ! CategoryMetaEquals(currentCat, prevCat, c)
         else
           receiver ! CategoryMetaDelta(c)
 

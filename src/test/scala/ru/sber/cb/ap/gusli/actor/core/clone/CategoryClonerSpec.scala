@@ -9,7 +9,7 @@ import ru.sber.cb.ap.gusli.actor.core.clone.CategoryCloner.CategoryCloneSuccessf
 class CategoryClonerSpec extends ActorBaseTest("CategoryClonerSpec") {
   private val receiverProbe = TestProbe()
   private val projectProbe: TestProbe = TestProbe()
-  private val cat = system.actorOf(Category(CategoryMetaDefault("category"), projectProbe.ref), "curr-cat")
+  private val cat = system.actorOf(Category(CategoryMetaDefault("category"), projectProbe.ref), "category")
   private val sub = system.actorOf(Category(CategoryMetaDefault("sub"), projectProbe.ref), "sub")
   private var cat1: ActorRef = _
   private var cat11: ActorRef = _
@@ -42,29 +42,29 @@ class CategoryClonerSpec extends ActorBaseTest("CategoryClonerSpec") {
         cat ! GetSubcategories()
         expectMsgPF(){
           case SubcategorySet(s)=>
-            val c1 = s.head
-            c1 ! GetCategoryMeta()
+            val sub = s.head
+            sub ! GetCategoryMeta()
             expectMsg(CategoryMetaResponse(CategoryMetaDefault("sub")))
 
-            c1 ! GetSubcategories()
+            sub ! GetSubcategories()
             expectMsgPF(){
               case SubcategorySet(ss)=>
-                val c11 = ss.head
-                c11 ! GetCategoryMeta()
+                val c1 = ss.head
+                c1 ! GetCategoryMeta()
                 expectMsg(CategoryMetaResponse(CategoryMetaDefault("cat-1")))
 
-                c11 ! GetSubcategories()
+                c1 ! GetSubcategories()
                 expectMsgPF(){
                   case SubcategorySet(sss)=>
-                    val c111 = sss.head
-                    c111 ! GetCategoryMeta()
+                    val c11 = sss.head
+                    c11 ! GetCategoryMeta()
                     expectMsg(CategoryMetaResponse(CategoryMetaDefault("cat-11")))
 
-                    c111 ! GetSubcategories()
+                    c11 ! GetSubcategories()
                     expectMsgPF(){
                       case SubcategorySet(ssss)=>
-                        val c1111 = ssss.head
-                        c1111 ! GetCategoryMeta()
+                        val c111 = ssss.head
+                        c111 ! GetCategoryMeta()
                         expectMsg(CategoryMetaResponse(CategoryMetaDefault("cat-111")))
                     }
                 }
@@ -72,7 +72,5 @@ class CategoryClonerSpec extends ActorBaseTest("CategoryClonerSpec") {
         }
       }
     }
-
-
   }
 }
