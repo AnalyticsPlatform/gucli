@@ -19,13 +19,15 @@ class CategoryDiffForNonEqualsSpec extends ActorBaseTest("CategoryDiffForNonEqua
     val prevCat = system.actorOf(Category(prevMeta, projectProbe.ref))
 
     system.actorOf(CategoryDiffer(currentCat, prevCat, receiverProbe.ref))
-    receiverProbe.expectMsgPF() {
-      case CategoryDelta(delta) =>
-        delta ! GetCategoryMeta()
-        expectMsg(CategoryMetaResponse(currMeta))
-    }
-
     expectNoMessage()
+
+//    receiverProbe.expectMsgPF() {
+//      case CategoryDelta(delta) =>
+//        delta ! GetCategoryMeta()
+//        expectMsg(CategoryMetaResponse(currMeta))
+//    }
+
+//    expectNoMessage()
   }
 
 

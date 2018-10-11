@@ -29,7 +29,7 @@ object CategoryDiffer {
 }
 
 class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef) extends BaseActor {
-  implicit val timeout = Timeout(5 hour)
+  implicit val timeout = Timeout(5 second)
 
   private var currProject: Option[ActorRef] = None
   private var deltaCatMeta: Option[CategoryMeta] = None
@@ -57,10 +57,12 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
     case CategoryMetaDelta(d) =>
       deltaCatMeta = Some(d)
       createCategoryDelta()
+      compareSubcategories()
     case CategoryMetaEquals(_, _, m) =>
       deltaCatMeta = Some(m)
       isCategoryMetaEquals = true
       createCategoryDelta()
+      compareSubcategories()
     case SubcategoryExtracted(cat, map) =>
       if (cat == currentCat)
         currMap = Some(map)
@@ -85,8 +87,10 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
   }
 
   def createCategoryDelta(): Unit = {
-    for (p <- currProject; m <- deltaCatMeta)
+    for (p <- currProject; m <- deltaCatMeta){
       categoryDelta = Some(context.system.actorOf(Category(m, p)))
+      receiver ! CategoryDelta(categoryDelta.get)
+    }
   }
 
   def compareSubcategories(): Unit = {
@@ -155,8 +159,10 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
               }
               else
                 {
-                  receiver ! CategoryDelta(categoryDelta.get)
-                  context.stop(self)
+                  val delta = categoryDelta.get
+                  receiver ! CategoryDelta(delta)
+                  //receiver ! CategoryDelta(categoryDelta.get)
+                  //context.stop(self)
                 }
             }
             else if (set.nonEmpty) {
