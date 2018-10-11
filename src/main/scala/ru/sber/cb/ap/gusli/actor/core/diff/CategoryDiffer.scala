@@ -1,21 +1,21 @@
 package ru.sber.cb.ap.gusli.actor.core.diff
 
 import akka.actor.{ActorRef, Props}
+import akka.pattern.ask
+import akka.util.Timeout
 import ru.sber.cb.ap.gusli.actor.core.Category._
 import ru.sber.cb.ap.gusli.actor.core.clone.CategoryCloner.CategoryCloneSuccessfully
-import ru.sber.cb.ap.gusli.actor.core.clone.{CategoryCloner, CategorySetCloner}
 import ru.sber.cb.ap.gusli.actor.core.clone.CategorySetCloner.CategorySetCloneSuccessfully
+import ru.sber.cb.ap.gusli.actor.core.clone.{CategoryCloner, CategorySetCloner}
 import ru.sber.cb.ap.gusli.actor.core.diff.CategoryDiffer.{CategoryDelta, CategoryEquals}
 import ru.sber.cb.ap.gusli.actor.core.diff.CategoryMetaDiffer.{CategoryMetaDelta, CategoryMetaEquals}
 import ru.sber.cb.ap.gusli.actor.core.extractor.SubcategoryExtractor
 import ru.sber.cb.ap.gusli.actor.core.extractor.SubcategoryExtractor.SubcategoryExtracted
 import ru.sber.cb.ap.gusli.actor.core.{Category, CategoryMeta}
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response, core}
-import akka.pattern.ask
-import akka.util.Timeout
 
-import concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object CategoryDiffer {
   def apply(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef): Props = Props(new CategoryDiffer(currentCat, prevCat, receiver))
@@ -76,9 +76,9 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
       subcategoriesToCompareCount -= 1
       equalsSubcategoryCopied = subcategoriesToCompareCount == 0
       checkFinish()
-    case CategoryDelta(d)=>
+    case CategoryDelta(d) =>
       context.actorOf(CategoryCloner(currentCat, d, self))
-    case CategoryCloneSuccessfully()=>
+    case CategoryCloneSuccessfully() =>
       subcategoriesToCompareCount -= 1
       equalsSubcategoryCopied = subcategoriesToCompareCount == 0
       checkFinish()
@@ -116,18 +116,18 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
       equalsSubcategoryCopied = true
       isEqualsSubcategoryEmpty = true
     }
-    else if (eq.nonEmpty){
+    else if (eq.nonEmpty) {
       subcategoriesToCompareCount = eq.size
       for (n <- eq) {
         val c = curr(n)
         val p = prev(n)
         context.actorOf(CategoryDiffer(c, p, self))
 
-        (c ? GetSubcategories()).map(x=>{
-          core.cprint("curr="+x)
+        (c ? GetSubcategories()).map(x => {
+          core.cprint("curr=" + x)
         })
-        (p ? GetSubcategories()).map(x=>{
-          core.cprint("prev="+x)
+        (p ? GetSubcategories()).map(x => {
+          core.cprint("prev=" + x)
         })
       }
     }
@@ -140,8 +140,30 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
         context.stop(self)
       }
       else {
-        receiver ! CategoryDelta(categoryDelta.get)
-        context.stop(self)
+        core.cprint("newSubcategoryCopied=" + newSubcategoryCopied)
+        core.cprint("equalsSubcategoryCopied=" + equalsSubcategoryCopied)
+        core.cprint("isCategoryMetaEquals=" + isCategoryMetaEquals)
+        core.cprint("isNewSubcategoryEmpty=" + isNewSubcategoryEmpty)
+        core.cprint("isEqualsSubcategoryEmpty=" + isEqualsSubcategoryEmpty)
+
+        (categoryDelta.get ? GetSubcategories()).map {
+          case SubcategorySet(set) =>
+            if (set.isEmpty) {
+              if (isCategoryMetaEquals){
+                receiver ! CategoryEquals(currentCat, prevCat)
+                context.stop(self)
+              }
+              else
+                {
+                  receiver ! CategoryDelta(categoryDelta.get)
+                  context.stop(self)
+                }
+            }
+            else if (set.nonEmpty) {
+              receiver ! CategoryDelta(categoryDelta.get)
+              context.stop(self)
+            }
+        }
       }
     }
   }
