@@ -1,12 +1,13 @@
 package ru.sber.cb.ap.gusli.actor.core.diff
 
 import akka.actor.{ActorRef, Props}
+import akka.util.Timeout
+import ru.sber.cb.ap.gusli.actor.core.{Category, CategoryMeta, _}
 import ru.sber.cb.ap.gusli.actor.core.Category._
 import ru.sber.cb.ap.gusli.actor.core.diff.CategoryDiffer.{CategoryDelta, CategoryEquals}
 import ru.sber.cb.ap.gusli.actor.core.diff.CategoryMetaDiffer.{AbstractCategoryMetaResponse, CategoryMetaDelta, CategoryMetaEquals}
 import ru.sber.cb.ap.gusli.actor.core.diff.SubCategoryMetaDiffer.{SubCategoryMetaDelta, SubCategoryMetaEquals}
 import ru.sber.cb.ap.gusli.actor.core.diff.WorkflowFromCategoryDiffer.{WorkflowFromCategoryDelta, WorkflowFromCategoryEquals, WorkflowFromCategoryResponse}
-import ru.sber.cb.ap.gusli.actor.core.{Category, CategoryMeta}
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
 
 
@@ -22,6 +23,13 @@ object CategoryDiffer {
 }
 
 class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef) extends BaseActor {
+  import akka.pattern.ask
+  import akka.util.Timeout
+
+  import concurrent.duration._
+  import scala.concurrent.ExecutionContext.Implicits.global
+  implicit val timeout = Timeout(5 hour)
+
   var subMetaDelta: Option[Set[CategoryMeta]] = None
   var subMetaCount = 0
   private var currProject: Option[ActorRef] = None
@@ -93,8 +101,20 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
 
     if (!isSubcategoryCompared)
       for (dc <- deltaCat; metaDelta <- subMetaDelta) {
-        for (m <- metaDelta)
-          dc ! AddSubcategory(m)
+        for (m <- metaDelta) {
+          cprint(m)
+
+//          dc ! AddSubcategory(m)
+
+//          (dc ? GetCategoryMeta()).map(x=>{
+//            cprint(x)
+//          })
+
+          (dc ? AddSubcategory(m)).map(x=>{
+            cprint(x)
+            self ! x
+          })
+        }
       }
 
     if (isSubcategoryCompared)

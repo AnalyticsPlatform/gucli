@@ -10,4 +10,8 @@ package object core {
       if (s.isEmpty) None
       else Some(s)
   }
+
+  def cprint(m:Any): Unit = {
+    println(Console.GREEN+m+Console.RESET)
+  }
 }

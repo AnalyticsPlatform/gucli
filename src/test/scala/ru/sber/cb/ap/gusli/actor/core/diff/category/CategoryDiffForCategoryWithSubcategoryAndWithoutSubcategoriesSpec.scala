@@ -61,7 +61,7 @@ class CategoryDiffForCategoryWithSubcategoryAndWithoutSubcategoriesSpec extends 
             cat1 ! GetSubcategories()
             expectMsgPF() {
               case SubcategorySet(subs1) =>
-                assert(subs1.size==1)
+                assert(subs1.size == 1)
                 println(Console.RED + subs1 + Console.RESET)
             }
         }
