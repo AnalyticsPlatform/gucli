@@ -142,7 +142,7 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
         context.become({
           case SubcategorySet(set)=>
             if (set.isEmpty){
-              if (isCategoryMetaEquals) {
+              if (isCategoryMetaEquals && isEqualsSubcategoryEmpty) {
                 core.categoryPrinter(currentCat)
                 core.categoryPrinter(prevCat)
                 receiver ! CategoryEquals(currentCat, prevCat)
