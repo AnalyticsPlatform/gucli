@@ -10,12 +10,12 @@ import ru.sber.cb.ap.gusli.actor.core.diff.CategoryMetaDiffer.{CategoryMetaDelta
 import ru.sber.cb.ap.gusli.actor.core.extractor.SubcategoryExtractor
 import ru.sber.cb.ap.gusli.actor.core.extractor.SubcategoryExtractor.SubcategoryExtracted
 import ru.sber.cb.ap.gusli.actor.core.{Category, CategoryMeta}
-import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
-  import akka.pattern.ask
-  import akka.util.Timeout
+import ru.sber.cb.ap.gusli.actor.{BaseActor, Response, core}
+import akka.pattern.ask
+import akka.util.Timeout
 
-  import concurrent.duration._
-  import scala.concurrent.ExecutionContext.Implicits.global
+import concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object CategoryDiffer {
   def apply(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef): Props = Props(new CategoryDiffer(currentCat, prevCat, receiver))
@@ -120,8 +120,15 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
       subcategoriesToCompareCount = eq.size
       for (n <- eq) {
         val c = curr(n)
-        val d = prev(n)
-        context.actorOf(CategoryDiffer(c, d, self))
+        val p = prev(n)
+        context.actorOf(CategoryDiffer(c, p, self))
+
+        (c ? GetSubcategories()).map(x=>{
+          core.cprint("curr="+x)
+        })
+        (p ? GetSubcategories()).map(x=>{
+          core.cprint("prev="+x)
+        })
       }
     }
   }

@@ -28,9 +28,15 @@ class SubcategoryExtractor(category: ActorRef, receiver: ActorRef) extends BaseA
 
   override def receive: Receive = {
     case SubcategorySet(set) =>
-      subCount = set.size
-      for (c <- set)
-        c ! GetCategoryMeta()
+      if (set.isEmpty) {
+        receiver ! SubcategoryExtracted(category, Map.empty)
+      }
+      else if (set.nonEmpty){
+        subCount = set.size
+        for (c <- set)
+          c ! GetCategoryMeta()
+      }
+
     case CategoryMetaResponse(m) =>
       subs += m.name -> sender()
       subCount -= 1

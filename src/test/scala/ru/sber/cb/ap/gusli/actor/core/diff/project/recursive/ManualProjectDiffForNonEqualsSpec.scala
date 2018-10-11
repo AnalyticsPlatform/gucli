@@ -54,7 +54,7 @@ class ManualProjectDiffForNonEqualsSpec extends ActorBaseTest("ManualProjectDiff
 
   "create ProjectDiffer" in {
     system.actorOf(ProjectDiffer(currentProject, prevProject, receiver.ref))
-    receiver.expectMsgPF(7 hour) {
+    receiver.expectMsgPF() {
       case ProjectDelta(p) =>
         system.actorOf(ProjectWriter(p, Paths.get("./target/ManualProjectDiffForNonEqualsSpec"))) ! WriteProject()
         expectMsg(ProjectWrited())

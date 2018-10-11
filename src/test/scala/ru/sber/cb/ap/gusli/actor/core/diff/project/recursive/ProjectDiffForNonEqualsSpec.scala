@@ -38,13 +38,13 @@ class ProjectDiffForNonEqualsSpec extends ActorBaseTest("ProjectDiffForNonEquals
 
     "create ProjectDiffer" in {
       system.actorOf(ProjectDiffer(currentProject, prevProject, receiver.ref))
-      receiver.expectMsgPF(7 hour) {
+      receiver.expectMsgPF() {
         case ProjectDelta(p) =>
           p ! GetCategoryRoot()
-          expectMsgPF(7 hour){
+          expectMsgPF(){
             case CategoryRoot(root)=>
               root ! GetSubcategories()
-              expectMsgPF(7 hour){
+              expectMsgPF(){
                 case SubcategorySet(set)=>
                   println(set)
               }
