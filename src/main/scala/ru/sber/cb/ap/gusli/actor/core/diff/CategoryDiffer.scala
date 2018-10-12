@@ -142,16 +142,38 @@ class CategoryDiffer(currentCat: ActorRef, prevCat: ActorRef, receiver: ActorRef
         context.become({
           case SubcategorySet(set)=>
             if (set.isEmpty){
-              if (isCategoryMetaEquals && isEqualsSubcategoryEmpty) {
+              if (isCategoryMetaEquals) {
+                println("currentCat")
                 core.categoryPrinter(currentCat)
+                Thread.sleep(1500)
+                println("///currentCat")
+                println("prevCat")
                 core.categoryPrinter(prevCat)
+                Thread.sleep(1500)
+                println("///prevCat")
                 receiver ! CategoryEquals(currentCat, prevCat)
                 context.stop(self)
               }
               else {
                 core.categoryPrinter(delta)
-                receiver ! CategoryDelta(delta)
-                context.stop(self)
+                delta ! GetSubcategories()
+                context.become{
+                  case SubcategorySet(set)=>
+                    if (set.isEmpty){
+                      if (isCategoryMetaEquals) {
+                        receiver ! CategoryEquals(currentCat, prevCat)
+                        context.stop(self)
+                      }
+                      else {
+                        receiver ! CategoryDelta(delta)
+                        context.stop(self)
+                      }
+                    }
+                    else if (set.nonEmpty) {
+                      receiver ! CategoryDelta(delta)
+                      context.stop(self)
+                    }
+                }
               }
             }
             else if (set.nonEmpty){
