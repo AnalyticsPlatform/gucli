@@ -22,39 +22,35 @@ class CategoryDtoExtractor(category: ActorRef, receiver: ActorRef) extends BaseA
   private var subcategoryCount: Int = -1
   private var workflowCount: Int = -1
 
+  private val r: Receive = {
+    case CategoryMetaResponse(m) =>
+      categoryMeta = Some(m)
+    case SubcategorySet(s) =>
+      subcategoryCount = s.size
+      for (c <- s)
+        context.actorOf(CategoryDtoExtractor(c, self))
+    case WorkflowSet(s) =>
+      workflowCount = s.size
+      for (w <- s)
+        context.actorOf(WorkflowDtoExtractor(w, self))
+    case CategoryDtoExtracted(dto) =>
+      subs += dto
+      subcategoryCount -= 1
+    case WorkflowExtracted(dto) =>
+      wfs += dto
+      workflowCount -= 1
+  }
+
   override def preStart(): Unit = {
     category ! GetCategoryMeta()
     category ! GetSubcategories()
     category ! GetWorkflows()
   }
 
+  override def receive(): Receive =
+    r.andThen(_ => checkFinish())
 
-  def receive(): Receive = {
-    case CategoryMetaResponse(m) =>
-      categoryMeta = Some(m)
-      checkFinish()
-    case SubcategorySet(s) =>
-      subcategoryCount = s.size
-      for (c <- s)
-        context.actorOf(CategoryDtoExtractor(c, self))
-      checkFinish()
-    case WorkflowSet(s) =>
-      workflowCount = s.size
-      for (w <- s)
-        context.actorOf(WorkflowDtoExtractor(w, self))
-      checkFinish()
-    case CategoryDtoExtracted(dto) =>
-      subs += dto
-      subcategoryCount -= 1
-      checkFinish()
-    case WorkflowExtracted(dto) =>
-      wfs += dto
-      workflowCount -= 1
-      checkFinish()
-  }
-
-
-  def checkFinish(): Unit =
+  private def checkFinish(): Unit =
     if (isSubcategoriesAndWorkflowsExtracted())
       for (m <- categoryMeta) {
         val dto = CategoryDto(m, subs, wfs)
@@ -63,6 +59,6 @@ class CategoryDtoExtractor(category: ActorRef, receiver: ActorRef) extends BaseA
       }
 
 
-  def isSubcategoriesAndWorkflowsExtracted(): Boolean =
+  private def isSubcategoriesAndWorkflowsExtracted(): Boolean =
     subcategoryCount == 0 && workflowCount == 0
 }

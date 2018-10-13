@@ -25,9 +25,7 @@ class CategoryDtoExtractorSpec extends ActorBaseTest("CategoryDtoExtractorSpec")
   }
 
   cat2 ! CreateWorkflow(WorkflowMetaDefault("wf-2", Map("sql" -> "select 1 as w1")))
-  expectMsgPF() {
-    case WorkflowCreated(_) =>
-  }
+  expectMsgAnyClassOf(classOf[WorkflowCreated])
 
   cat2 ! AddSubcategory(CategoryMetaDefault("cat-22", Map("table22" -> "tableCC")))
   expectMsgAnyClassOf(classOf[SubcategoryCreated])
@@ -56,6 +54,8 @@ class CategoryDtoExtractorSpec extends ActorBaseTest("CategoryDtoExtractorSpec")
                 assert(cat22Dto.sqlMap == Map("table22" -> "tableCC"))
             }
         }
+
+        receiverProbe.expectNoMessage()
       }
     }
   }
