@@ -7,7 +7,7 @@ import ru.sber.cb.ap.gusli.actor.core.diff.WorkflowSetDiffer
 import ru.sber.cb.ap.gusli.actor.core.diff.WorkflowSetDiffer.WorkflowSetDelta
 import ru.sber.cb.ap.gusli.actor.core.{ActorBaseTest, EntityMetaDefault, Workflow, WorkflowMetaDefault}
 
-class WorkflowSetDifferForNonEqualsSpec extends ActorBaseTest("WorkflowListComparerForEqualsSpec") {
+class WorkflowSetDifferForNonEqualsSpec extends ActorBaseTest("WorkflowSetDifferForNonEqualsSpec") {
   val receiver = TestProbe()
   private val projectProbe = TestProbe()
   private val meta1 = WorkflowMetaDefault("wf-1", Map("file1" -> "select 1"), Map("a" -> "111", "b" -> "222"))

@@ -2,12 +2,14 @@ package ru.sber.cb.ap.gusli.actor.core.diff.project.recursive
 
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
+import org.scalatest.Ignore
 import ru.sber.cb.ap.gusli.actor.core.Category.{AddSubcategory, SubcategoryCreated}
 import ru.sber.cb.ap.gusli.actor.core.Project.{CategoryRoot, GetCategoryRoot}
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer.ProjectEquals
 import ru.sber.cb.ap.gusli.actor.core.{ActorBaseTest, CategoryMetaDefault, Project, ProjectMetaDefault}
 
+@Ignore
 class ProjectDiffForEqualsSpec extends ActorBaseTest("ProjectDiffForEqualsSpec") {
   private val receiver = TestProbe()
   private val currentProject: ActorRef = system.actorOf(Project(ProjectMetaDefault("project")))

@@ -4,6 +4,7 @@ import java.nio.file.Paths
 
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
+import org.scalatest.Ignore
 import ru.sber.cb.ap.gusli.actor.core.Category.{AddSubcategory, GetSubcategories, SubcategoryCreated, SubcategorySet}
 import ru.sber.cb.ap.gusli.actor.core.Project.{CategoryRoot, GetCategoryRoot}
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer
@@ -11,8 +12,10 @@ import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer.{ProjectDelta, ProjectE
 import ru.sber.cb.ap.gusli.actor.core.{ActorBaseTest, CategoryMetaDefault, Project, ProjectMetaDefault}
 import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter
 import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter.{ProjectWrited, WriteProject}
+
 import concurrent.duration._
 
+@Ignore
 class ManualProjectDiffForNonEqualsSpec extends ActorBaseTest("ManualProjectDiffForNonEqualsSpec") {
   private val receiver = TestProbe()
   private val currentProject: ActorRef = system.actorOf(Project(ProjectMetaDefault("project")))
