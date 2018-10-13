@@ -30,6 +30,7 @@ object CategoryDtoDiffer {
     val prevSubs = getSubcategoryMap(previous)
 
     var diffSubs: Set[CategoryDto] = Set.empty
+
     val equalSubNames = currSubs.keySet intersect prevSubs.keySet
     for (n <- equalSubNames) {
       val c = currSubs(n)
@@ -37,11 +38,13 @@ object CategoryDtoDiffer {
 
       getDiff(c, p) match {
         case CategoryDtoEquals(c1, c2) =>
+          //todo: replace by the log message
           println(s"CategoryDtoEquals:$c1, $c2")
         case CategoryDtoDelta(d) =>
           diffSubs += d
       }
     }
+
     val diffSubNames = currSubs.keySet diff prevSubs.keySet
     for (n <- diffSubNames)
       diffSubs += currSubs(n)
@@ -57,6 +60,7 @@ object CategoryDtoDiffer {
     val prevWfs = getWorkflowMap(previous)
 
     var diffWfs: Set[WorkflowDto] = Set.empty
+
     val equalWfNames = currWfs.keySet intersect prevWfs.keySet
     for (n <- equalWfNames) {
       val c = currWfs(n)
