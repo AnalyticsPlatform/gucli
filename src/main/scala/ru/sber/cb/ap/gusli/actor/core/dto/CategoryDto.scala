@@ -12,10 +12,15 @@ case class CategoryDto(name: String,
                        stats: Set[Long] = Set.empty,
                        entities: Set[Long] = Set.empty,
                        subcategories: Set[CategoryDto] = Set.empty,
-                       workflows: Set[WorkflowDto] = Set.empty
-                      ) extends CategoryMeta
+                       workflows: Set[WorkflowDto] = Set.empty) extends CategoryMeta
 
 object CategoryDto {
+  def apply(m: CategoryMeta): CategoryDto =
+    CategoryDto(m, Set.empty[CategoryDto], Set.empty[WorkflowDto])
+
+  def apply(m: CategoryMeta, subcategories: Set[CategoryDto]): CategoryDto =
+    CategoryDto(m, subcategories, Set.empty[WorkflowDto])
+
   def apply(m: CategoryMeta, subcategories: Set[CategoryDto], workflows: Set[WorkflowDto]): CategoryDto =
     CategoryDto(m.name, m.sqlMap, m.init, m.user, m.queue, m.grenkiVersion, m.params, m.stats, m.entities, subcategories, workflows)
 }
