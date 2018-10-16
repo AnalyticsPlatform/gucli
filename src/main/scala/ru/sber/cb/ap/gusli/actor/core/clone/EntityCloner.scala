@@ -7,7 +7,7 @@ import ru.sber.cb.ap.gusli.actor.core.clone.EntityHierarchyCloner.EntityHierarch
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
 
 object EntityCloner {
-  def apply(fromRoot: ActorRef, toRoot: ActorRef, ids: Set[Long], receiver: ActorRef): Props = Props(new EntityCloner(toRoot, fromRoot, ids, receiver))
+  def apply(fromRoot: ActorRef, toRoot: ActorRef, ids: Set[Long], receiver: ActorRef): Props = Props(new EntityCloner(fromRoot, toRoot, ids, receiver))
 
   object EntitiesCloneSuccessful extends Response
 

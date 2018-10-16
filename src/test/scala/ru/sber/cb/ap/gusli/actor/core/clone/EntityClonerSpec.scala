@@ -62,10 +62,10 @@ class EntityClonerSpec extends ActorBaseTest("EntityClonerSpec") {
         fromRoot ! FindEntity(21L)
         expectMsg(EntityFound(EntityMetaDefault(21, "e-21", "category/e-21", Some(2)), e21))
 
-//        val toRoot: ActorRef = system.actorOf(Entity(meta))
-//        system.actorOf(EntityCloner(fromRoot, toRoot, Set(111L, 112L, 21L), receiver.ref))
-//
-//        receiver.expectMsg(EntitiesCloneSuccessful)
+        val toRoot: ActorRef = system.actorOf(Entity(meta))
+        system.actorOf(EntityCloner(fromRoot, toRoot, Set(111L, 112L, 21L), receiver.ref))
+
+        receiver.expectMsg(EntitiesCloneSuccessful)
       }
     }
   }
