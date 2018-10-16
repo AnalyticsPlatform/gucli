@@ -31,6 +31,7 @@ object Entity {
 
   case class EntityCreated(actorRef: ActorRef) extends ActorResponse
 
+  //todo: replace to ActorSetResponse
   case class ChildrenEntityList(actorList: Seq[ActorRef]) extends ActorListResponse
 
 }

@@ -22,6 +22,7 @@ object Workflow {
   case class BindEntitySuccessful(entityId: Long) extends Response
   case class BindEntityFailedBecauseItNotExists(entityId: Long) extends Response
 
+  //todo: replace to ActorSetResponse
   case class EntityList(actorList: Seq[ActorRef]) extends ActorListResponse
 }
 
