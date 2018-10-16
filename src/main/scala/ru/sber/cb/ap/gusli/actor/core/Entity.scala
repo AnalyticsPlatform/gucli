@@ -11,7 +11,7 @@ import scala.collection.immutable.HashMap
 object Entity {
   def apply(meta: EntityMeta): Props = Props(new Entity(meta))
 
-  abstract class AbstractParentResponse extends Response
+  sealed trait AbstractParentResponse extends Response
 
   case class GetEntityMeta(replyTo: Option[ActorRef] = None) extends Request
 
@@ -23,15 +23,15 @@ object Entity {
 
   //
 
-  case class ParentResponse(parent: ActorRef) extends AbstractParentResponse
+  object NoParentResponse extends AbstractParentResponse
+
+  case class ParentResponse(actorRef: ActorRef) extends ActorResponse with AbstractParentResponse
 
   case class EntityMetaResponse(meta: EntityMeta) extends Response
 
   case class EntityCreated(actorRef: ActorRef) extends ActorResponse
 
   case class ChildrenEntityList(actorList: Seq[ActorRef]) extends ActorListResponse
-
-  object NoParentResponse extends Response
 
 }
 
@@ -75,6 +75,7 @@ trait EntityMeta {
 
   def path: String
 
+  //todo: Find out if it needs to be implemented.
   def parentId: Option[Long]
 
   def storage = "HDFS"

@@ -15,7 +15,7 @@ class EntityIdExtractorSpec extends ActorBaseTest("EntityIdExtractorSpec") {
   private val metaDefault = WorkflowMetaDefault("wf", Map.empty)
   private val workflow: ActorRef = system.actorOf(Workflow(metaDefault, project.ref), "wf")
 
-  "A EntityIdExtractor" when {
+  "An EntityIdExtractor" when {
     "created with a workflow that binned two entities: 1,2" should {
       val entity1 = TestProbe()
       workflow ! BindEntity(1)
