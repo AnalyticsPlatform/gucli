@@ -3,7 +3,7 @@ package ru.sber.cb.ap.gusli.actor.core
 import akka.actor.{ActorRef, Props}
 import ru.sber.cb.ap.gusli.actor._
 import ru.sber.cb.ap.gusli.actor.core.Entity._
-import ru.sber.cb.ap.gusli.actor.core.Project.FindEntity
+import ru.sber.cb.ap.gusli.actor.core.Project.{EntityFound, EntityNotFound, FindEntity}
 import ru.sber.cb.ap.gusli.actor.core.search.EntitySearcher
 
 import scala.collection.immutable.HashMap
@@ -23,8 +23,6 @@ object Entity {
 
   //
 
-  object NoParentResponse extends AbstractParentResponse
-
   case class ParentResponse(actorRef: ActorRef) extends ActorResponse with AbstractParentResponse
 
   case class EntityMetaResponse(meta: EntityMeta) extends Response
@@ -33,10 +31,14 @@ object Entity {
 
   case class ChildrenEntityList(actorList: Seq[ActorRef]) extends ActorListResponse
 
+  object NoParentResponse extends AbstractParentResponse
+
 }
 
 case class Entity(meta: EntityMeta) extends BaseActor {
+
   private var children: HashMap[Long, ActorRef] = HashMap.empty[Long, ActorRef]
+  private var awaitSearch: HashMap[Long, AwaitSearch] = HashMap.empty
 
   override def receive: Receive = {
     case m@GetEntityMeta(sendTo) => sendEntityMeta(sendTo)
@@ -52,8 +54,22 @@ case class Entity(meta: EntityMeta) extends BaseActor {
     case GetChildren(sendTo) =>
       sendTo.getOrElse(sender) ! ChildrenEntityList(children.values.toSeq)
     case m@FindEntity(entityId, sendTo) =>
-      val searcher = context actorOf EntitySearcher(children.values.toSeq, entityId, sendTo.getOrElse(sender))
-      searcher forward m
+      val replayTo = sendTo.getOrElse(sender)
+      awaitSearch += entityId -> AwaitSearch(children.values.size, replayTo)
+      context.actorOf(EntitySearcher(children.values.toSeq, entityId, self))
+    case m: EntityFound =>
+      val await: AwaitSearch = awaitSearch(m.meta.id)
+      await.receiver ! m
+      awaitSearch - m.meta.id
+    case EntityNotFound(id) =>
+      val await: AwaitSearch = awaitSearch(id)
+      if (await.count <= 1) {
+        await.receiver ! EntityNotFound(id)
+      }
+      else {
+        awaitSearch.updated(id, await.copy(count = await.count - 1))
+      }
+
     case GetParent(sendTo) =>
       val replyTo = sendTo.getOrElse(sender)
       if (meta.id == 0)
@@ -66,6 +82,9 @@ case class Entity(meta: EntityMeta) extends BaseActor {
   private def sendEntityMeta(sendTo: Option[ActorRef]) = {
     sendTo.getOrElse(sender) ! EntityMetaResponse(meta)
   }
+
+  case class AwaitSearch(count: Int, receiver: ActorRef)
+
 }
 
 trait EntityMeta {
