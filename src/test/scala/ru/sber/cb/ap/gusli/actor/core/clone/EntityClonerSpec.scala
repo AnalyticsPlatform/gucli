@@ -16,8 +16,6 @@ class EntityClonerSpec extends ActorBaseTest("EntityClonerSpec") {
   var e2: ActorRef = null
   var e21: ActorRef = null
   var e11: ActorRef = null
-  var e111: ActorRef = null
-  var e112: ActorRef = null
   expectMsgPF() {
     case EntityCreated(e) =>
       e1 = e
@@ -28,28 +26,21 @@ class EntityClonerSpec extends ActorBaseTest("EntityClonerSpec") {
           e11 = ee
 
           e11 ! AddChildEntity(EntityMetaDefault(111, "e-111", "category/e-1/e-11/e-111", Some(11)))
-          expectMsgPF() {
-            case EntityCreated(eee) =>
-              e111 = eee
-          }
+          expectMsgClass(classOf[EntityCreated])
 
           e11 ! AddChildEntity(EntityMetaDefault(112, "e-112", "category/e-1/e-11/e-112", Some(11)))
-          expectMsgPF() {
-            case EntityCreated(eee) =>
-              e112 = eee
-          }
+          expectMsgClass(classOf[EntityCreated])
       }
   }
+
   fromRoot ! AddChildEntity(EntityMetaDefault(2, "e-2", "category/e-2", Some(0)))
+
   expectMsgPF() {
     case EntityCreated(e) =>
       e2 = e
 
       e2 ! AddChildEntity(EntityMetaDefault(21, "e-21", "category/e-21", Some(2)))
-      expectMsgPF() {
-        case EntityCreated(ee) =>
-          e21 = ee
-      }
+      expectMsgClass(classOf[EntityCreated])
   }
 
   "An EntityCloner with empty root entity" when {
@@ -95,7 +86,7 @@ class EntityClonerSpec extends ActorBaseTest("EntityClonerSpec") {
       }
 
       "toRoot contains entity with id 21" in {
-        toRoot ! FindEntity(112L)
+        toRoot ! FindEntity(21L)
         expectMsgPF() {
           case EntityFound(m, _) =>
             assert(m == EntityMetaDefault(21, "e-21", "category/e-21", Some(2)))
