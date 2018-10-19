@@ -9,7 +9,6 @@ import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer.ProjectEquals
 import ru.sber.cb.ap.gusli.actor.core.{ActorBaseTest, CategoryMetaDefault, Project, ProjectMetaDefault}
 
-@Ignore
 class ProjectDiffForEqualsSpec extends ActorBaseTest("ProjectDiffForEqualsSpec") {
   private val receiver = TestProbe()
   private val currentProject: ActorRef = system.actorOf(Project(ProjectMetaDefault("project")))

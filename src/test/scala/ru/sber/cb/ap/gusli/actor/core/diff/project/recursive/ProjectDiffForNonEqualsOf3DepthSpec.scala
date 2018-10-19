@@ -1,22 +1,14 @@
 package ru.sber.cb.ap.gusli.actor.core.diff.project.recursive
 
-import java.nio.file.Paths
-
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
-import org.scalatest.Ignore
-import ru.sber.cb.ap.gusli.actor.core.Category.{AddSubcategory, GetSubcategories, SubcategoryCreated, SubcategorySet}
+import ru.sber.cb.ap.gusli.actor.core.Category._
 import ru.sber.cb.ap.gusli.actor.core.Project.{CategoryRoot, GetCategoryRoot}
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer
-import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer.{ProjectDelta, ProjectEquals}
-import ru.sber.cb.ap.gusli.actor.core.{ActorBaseTest, CategoryMetaDefault, Project, ProjectMetaDefault}
-import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter
-import ru.sber.cb.ap.gusli.actor.projects.write.ProjectWriter.{ProjectWrited, WriteProject}
+import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer.ProjectDelta
+import ru.sber.cb.ap.gusli.actor.core.{ActorBaseTest, CategoryMetaDefault, Project, ProjectMetaDefault, WorkflowMetaDefault}
 
-import concurrent.duration._
-
-@Ignore
-class ManualProjectDiffForNonEqualsSpec extends ActorBaseTest("ManualProjectDiffForNonEqualsSpec") {
+class ProjectDiffForNonEqualsOf3DepthSpec extends ActorBaseTest("ProjectDiffForNonEqualsOf3DepthSpec") {
   private val receiver = TestProbe()
   private val currentProject: ActorRef = system.actorOf(Project(ProjectMetaDefault("project")))
   private val prevProject: ActorRef = system.actorOf(Project(ProjectMetaDefault("project-copy")))
@@ -55,12 +47,22 @@ class ManualProjectDiffForNonEqualsSpec extends ActorBaseTest("ManualProjectDiff
       currCat11 = s
   }
 
+  currCat11 ! CreateWorkflow(WorkflowMetaDefault("wf-11-1", Map("sql" -> "select 1 as a")))
+
   "create ProjectDiffer" in {
     system.actorOf(ProjectDiffer(currentProject, prevProject, receiver.ref))
     receiver.expectMsgPF() {
       case ProjectDelta(p) =>
-        system.actorOf(ProjectWriter(p, Paths.get("./target/ManualProjectDiffForNonEqualsSpec"))) ! WriteProject()
-        expectMsg(ProjectWrited())
+        assert(p.name == "project")
+        val cat1 = p.categoryRoot.subcategories.head
+        assert(cat1.name == "cat1")
+
+        val cat11 = cat1.subcategories.head
+        assert(cat11.name == "cat11")
+
+        val wf111 = cat11.workflows.head
+        assert(wf111.name == "wf-11-1")
+        assert(wf111.sql == Map("sql" -> "select 1 as a"))
     }
   }
 }
