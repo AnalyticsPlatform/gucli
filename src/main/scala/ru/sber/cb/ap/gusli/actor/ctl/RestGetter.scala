@@ -1,46 +1,69 @@
 package ru.sber.cb.ap.gusli.actor.ctl
 
-import java.awt.Color
-
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCode, StatusCodes}
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
-import akka.util.ByteString
-import ru.sber.cb.ap.gusli.actor.ctl.RestGetter.Response
-
-import scala.concurrent.{Await, Future}
+import ru.sber.cb.ap.gusli.actor.{Response, Sleepy}
+import ru.sber.cb.ap.gusli.actor.Sleepy.WakeUp
+import ru.sber.cb.ap.gusli.actor.ctl.RestGetter.{HttpBody, HttpBodyError}
 
 object RestGetter {
-  def apply(uri: String, replyTo: ActorRef): Props = Props(new RestGetter(uri: String, replyTo: ActorRef))
+  def apply(url: String, replyTo: ActorRef): Props = Props(new RestGetter(url, replyTo))
   
-  case class Response(mes: ResponseEntity)
+  case class HttpBody(body: String) extends Response
+  
+  case class HttpBodyError(code: StatusCode) extends Response
 }
 
-class RestGetter(url: String, replyTo: ActorRef) extends Actor
-  with ActorLogging {
-
+/**
+  * The actor class having single implementation - preStart(). Send get-request to <b>url</b>, and then send response as string to <b>reply</b>
+  * @param url
+  * @param replyTo
+  */
+class RestGetter(url: String, replyTo: ActorRef) extends Actor with ActorLogging {
+  
+  var attemptCount = 0
+  
   import akka.pattern.pipe
   import context.dispatcher
-
+  
   final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
-
+  
   val http = Http(context.system)
-
-  override def preStart() = {
-    http.singleRequest(HttpRequest(uri = this.url))
-    .pipeTo(self)
-  }
-
-  def receive = {
+  
+  override def preStart() = tryRequest()
+  
+  override def receive = {
+    case WakeUp() => preStart()
+    
     case HttpResponse(StatusCodes.OK, headers, entity, _) =>
-      entity.dataBytes.runFold(ByteString(""))(_ ++ _).foreach { body =>
-        log.info("Got response, body: " + body.utf8String)
+      println(Console.GREEN + StatusCodes.OK + Console.WHITE)
+      println(Console.YELLOW + headers + Console.WHITE)
+      println(Console.BLUE + entity + Console.WHITE)
+      
+      val bodyOption = Unmarshaller.stringUnmarshaller(entity).value
+      if (bodyOption.isDefined) {
+        replyTo ! HttpBody(bodyOption.get.get)
+        context.stop(self)
       }
-      replyTo ! Response(entity)
+      else
+        context.actorOf(Sleepy(attemptCount, self))
+
     case resp @ HttpResponse(code, _, _, _) =>
       log.error("Request failed, response code: " + code)
       resp.discardEntityBytes()
+      replyTo ! HttpBodyError(code)
+      context.stop(self)
   }
-
+  
+  private def tryRequest() = {
+    attemptCount += 1
+    if (attemptCount <= 5) http.singleRequest(HttpRequest(uri = this.url)).pipeTo(self)
+    else {
+      replyTo ! HttpBodyError(StatusCodes.RequestTimeout)
+      context.stop(self)
+    }
+  }
 }
