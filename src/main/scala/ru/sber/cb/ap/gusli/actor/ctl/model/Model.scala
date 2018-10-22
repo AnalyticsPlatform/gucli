@@ -1,15 +1,18 @@
 package ru.sber.cb.ap.gusli.actor.ctl.model
 
-import ru.sber.cb.ap.gusli.actor.core.dto.WorkflowDto
+import ru.sber.cb.ap.gusli.actor.core.dto.{EntityDto, WorkflowDto}
 import ru.sber.cb.ap.gusli.actor.core.{EntityMetaDefault, WorkflowMetaDefault}
 
+object Entity {
+  def fromDto(eDto: EntityDto): Entity = Entity(eDto.name, Some(eDto.path), eDto.id, parentId = eDto.parentId.getOrElse(0))
+}
 
 case class Entity(
-                   name: String,
-                   path: Option[String],
-                   id: Long,
-                   storage: String = "HDFS",
-                   parentId: Long) {
+  name: String,
+  path: Option[String],
+  id: Long,
+  storage: String = "HDFS",
+  parentId: Long) {
   override def toString: String = s"$id $name"
   
   def toEntityMeta(): EntityMetaDefault = EntityMetaDefault(id, name, path.getOrElse(""), Some(parentId))
