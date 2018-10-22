@@ -23,4 +23,5 @@ case class CategoryDto(name: String,
                        stats: Set[Long] = Set.empty,
                        entities: Set[Long] = Set.empty,
                        subcategories: Set[CategoryDto] = Set.empty,
-                       workflows: Set[WorkflowDto] = Set.empty) extends CategoryMeta
+                       workflows: Set[WorkflowDto] = Set.empty,
+                       isDeleted: Boolean = false) extends CategoryMeta

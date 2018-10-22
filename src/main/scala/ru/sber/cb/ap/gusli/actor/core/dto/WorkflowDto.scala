@@ -11,7 +11,8 @@ case class WorkflowDto(name: String,
                        grenkiVersion: Option[String] = None,
                        params: Map[String, String] = Map.empty,
                        stats: Set[Long] = Set.empty,
-                       entities: Set[Long] = Set.empty) extends WorkflowMeta
+                       entities: Set[Long] = Set.empty,
+                       isDeleted: Boolean = false) extends WorkflowMeta
 
 object WorkflowDto {
   def apply(meta: WorkflowMeta, entities: Set[Long]): WorkflowDto =
