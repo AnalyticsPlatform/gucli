@@ -14,7 +14,7 @@ class RestGetterSpec  extends ActorBaseTest("Downloader") {
     "send back entity json" in {
       val link = "hide"
       system.actorOf(RestGetter(link, self))
-      val expectedEntity = Entity("ap/rb/dimension/ref_name_doc_z_name_paydoc_eks", None, 902067103, "HDFS", 902067100)
+      val expectedEntity = Entity("ap/rb/wut", None, 0, "HDFS", 0)
   
       expectMsgPF(5 seconds) { case RestGetter.HttpBody(message) =>
         val jsonEntity = Json.parse(message)
