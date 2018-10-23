@@ -25,9 +25,13 @@ class CategoryToDisrtibTest extends ActorBaseTest("CategoryToDisrtib") {
   
   
   private def createCategoryTree(): CategoryDto = {
-    val wf11 = WorkflowDto("1", Map.empty, entities = Set(1, 2, 3))
-    val wf12 = WorkflowDto("2", Map.empty, entities = Set(1, 2, 3))
-    val wf12211 = WorkflowDto("3", Map.empty, entities = Set(1, 2, 3), stats = Set(1, 2, 3))
+    val sqlForWf = Map("1.sql" -> "select 1 from table", "2.sql" -> "select 1 from table")
+    val mapForWf = Map("1.map" -> "a:b", "2.map" -> "a:b")
+    val initForWf = Map("init1.sql" -> "select 1 from table", "init2.sql" -> "select 1 from table")
+    
+    val wf11 = WorkflowDto("1", sqlForWf, mapForWf, initForWf, entities = Set(1, 2, 3), user = Some("Iluha"))
+    val wf12 = WorkflowDto("2", sqlForWf, mapForWf, initForWf, entities = Set(1, 2, 3))
+    val wf12211 = WorkflowDto("3", sqlForWf, mapForWf, initForWf, entities = Set(1, 2, 3), stats = Set(1, 2, 3))
     
     val c1221 = CategoryDto("1221", workflows = Set(wf12211))
     val c122 = CategoryDto("122", subcategories = Set(c1221))

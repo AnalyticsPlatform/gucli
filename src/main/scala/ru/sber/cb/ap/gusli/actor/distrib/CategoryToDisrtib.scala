@@ -11,6 +11,7 @@ import ru.sber.cb.ap.gusli.actor.ctl.model.{Category, Wf}
 import ru.sber.cb.ap.gusli.actor.ctl.model.CtlJsonProtocol.{catWrites, wfWrites}
 import FolderNames._
 import ru.sber.cb.ap.gusli.actor.distrib.CategoryToDisrtib.CategoryWritten
+import ru.sber.cb.ap.gusli.actor.distrib.category.CategoryHdfs
 
 object CategoryToDisrtib {
   
@@ -28,7 +29,9 @@ object CategoryToDisrtib {
   * @param cDto CategoryDto
   * @param receiver whom to send CategoryWritten Response
   */
-class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryDto, parentCDto: CategoryDto, receiver: ActorRef) extends BaseActor {
+class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryDto, parentDto: CategoryDto, receiver: ActorRef) extends BaseActor {
+  
+  private val thisHdfsPath = artifactPath.resolve(apHdfs).resolve("user").resolve("__USER__").resolve(fullCatName)
   
   private val childrenCount = cDto.subcategories.size
   private var writtenChildrenCount = 0
@@ -55,9 +58,14 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
       context.actorOf(CategoryToDisrtib(artifactPath, fullCatName + s"/${c.name}", c, cDto, self)))
   }
   
-  private def writeCategory(): Path = {
+  private def writeCategory() = {
     val fileName = makeNormalJsonName(fullCatName)
     val writePath = artifactPath.resolve(apCtl).resolve(categories)resolve(if (cDto.isDeleted) delete else create)
+    writeCategoryJson(fileName, writePath)
+    CategoryHdfs(artifactPath.resolve(apHdfs), cDto, parentDto, fullCatName)
+  }
+  
+  private def writeCategoryJson(fileName: String, writePath: Path) = {
     val jsEntity = Json.prettyPrint(Json.toJson(Category.namedCategory(fullCatName)))
     Files.createDirectories(writePath)
     Files.write(writePath.resolve(fileName), jsEntity.getBytes(StandardCharsets.UTF_8))
@@ -72,7 +80,7 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
         writeEntityBind(wfPath, wf, wfFileName)
         writeStatBind(wfPath, wf, wfFileName)
       }
-      writeHdfs(wf)
+      writeWorkflowHdfs(wf)
     }
   }
   
@@ -81,10 +89,13 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
     Files.createDirectories(wfPath)
     Files.write(wfPath.resolve(fileName), js.getBytes(StandardCharsets.UTF_8))
   }
+
   
-  private def writeHdfs(wDto: WorkflowDto): Unit = {
-    val path = artifactPath.resolve(apHdfs).resolve("user").resolve("__USER__").resolve(fullCatName)
-    writeMap(wDto.sql)
+  private def writeWorkflowHdfs(wDto: WorkflowDto): Unit = {
+    val path = artifactPath.resolve(apHdfs).resolve("user").resolve("__USER__").resolve(fullCatName).resolve(makeNormalName(wDto.name))
+    writeSqlMap(path, wDto.sql)
+    writeSqlInit(path, wDto.init)
+    writeSql(path, wDto.sqlMap, wDto.name)
   }
   
   private def writeEntityBind(path: Path, wDto: WorkflowDto, wfFileName: String) =
@@ -100,11 +111,33 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
     }
   }
   
-  private def writeMap(stringToString: Map[String, String]) = {
-  
+  private def writeSqlMap(path: Path, m: Map[String, String]) = {
+    if (m.nonEmpty) {
+      Files.createDirectories(path)
+      val content = m.keySet.mkString("\n")
+      Files.write(path.resolve("sql.map"), content.getBytes(StandardCharsets.UTF_8))
+    }
   }
   
-  private def makeNormalJsonName(name: String): String = name.replace("/", "~").replace(":", "%3A").trim + ".json"
+  private def writeSqlInit(path: Path, m: Map[String, String]) = {
+    if (m.nonEmpty) {
+      Files.createDirectories(path)
+      val content = m.keySet.mkString("; \n")
+      Files.write(path.resolve("sql.init"), content.getBytes(StandardCharsets.UTF_8))
+    }
+  }
+  
+  private def writeSql(path: Path, m: Map[String, String], wfName: String) = {
+    if (m.nonEmpty) {
+      Files.createDirectories(path)
+      val content = m.keySet.mkString("; \n")
+      Files.write(path.resolve(wfName), content.getBytes(StandardCharsets.UTF_8))
+    }
+  }
+  
+  private def makeNormalJsonName(name: String): String = makeNormalName(name) + ".json"
+  
+  private def makeNormalName(name: String) = name.replace("/", "~").replace(":", "%3A").trim
   
   private def checkFinish(): Unit = if (writtenChildrenCount == childrenCount) finish()
   

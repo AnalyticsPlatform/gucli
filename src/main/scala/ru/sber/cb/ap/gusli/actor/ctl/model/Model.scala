@@ -35,10 +35,29 @@ object Category {
 /**XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
 object Param {
-  def fromDto(wDto: WorkflowDto): Seq[Param] = {
-    val params = for ((k,v) <- wDto.params) yield Param(Some(-1), k, Some(v))
+  def fromDto(wDto: WorkflowDto, catName: String): Seq[Param] = {
+    val newMap = wDto.params ++ dtoToMap(wDto, catName)
+    val params = for ((k,v) <- newMap) yield Param(Some(-1), k, Some(v))
     params.toSeq
   }
+  
+  private def dtoToMap(wDto: WorkflowDto, catName: String) = {
+    val m = collection.mutable.Map.empty[String, String]
+    if (wDto.sqlMap.nonEmpty)
+      m += "sql.map" -> ("hdfs:///user/${user.name}/" + s"$catName/${wDto.name}/sql.map")
+    if (wDto.init.nonEmpty)
+      m += "sql.init" -> ("hdfs:///user/${user.name}/" + s"$catName/${wDto.name}/sql.init")
+    if (wDto.sql.nonEmpty)
+      m += "sql.file" -> ("hdfs:///user/${user.name}/" + s"$catName/${wDto.name}/${wDto.name}.sql")
+    if (wDto.queue.nonEmpty)
+      m += "mapreduce.job.queuename" -> wDto.queue.get
+    if (wDto.grenkiVersion.nonEmpty)
+      m += "grenki" -> wDto.grenkiVersion.get
+    if (wDto.user.nonEmpty)
+      m += "user.name" -> wDto.user.get
+    m.toMap
+  }
+  
 }
 
 case class Param(
@@ -51,7 +70,7 @@ case class Param(
 object Wf {
   def fromDto(categoryName: String, wDto: WorkflowDto): Wf = Wf(
     name = wDto.name,
-    param = Param.fromDto(wDto),
+    param = Param.fromDto(wDto, categoryName),
     scheduled = false,
     id = -1,
     category = categoryName,
