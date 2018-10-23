@@ -7,7 +7,7 @@ import akka.actor.{ActorRef, Props}
 import play.api.libs.json.Json
 import ru.sber.cb.ap.gusli.actor.core.dto.EntityDto
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
-import ru.sber.cb.ap.gusli.actor.ctl.model.CtlJsonProtocol._
+import ru.sber.cb.ap.gusli.actor.ctl.model.CtlJsonProtocol.entityWrites
 import ru.sber.cb.ap.gusli.actor.ctl.model._
 import ru.sber.cb.ap.gusli.actor.distrib.EntityToDistrib.EntityWritten
 
@@ -24,7 +24,7 @@ class EntityToDistrib(entCreatePath: Path, eDto: EntityDto, receiver: ActorRef) 
   private var writtenChildrenCount = 0
   
   override def preStart(): Unit = {
-    writeEntity()
+    writeToDisk()
     eDto.children.foreach(e => context.actorOf(EntityToDistrib(entCreatePath, e, self)))
     checkFinish()
   }
@@ -35,7 +35,7 @@ class EntityToDistrib(entCreatePath: Path, eDto: EntityDto, receiver: ActorRef) 
       checkFinish()
   }
   
-  private def writeEntity(): Unit = {
+  private def writeToDisk(): Unit = {
     val fileName = eDto.id.toString + ".json"
     val jsEntity = Json.prettyPrint(Json.toJson(Entity.fromDto(eDto: EntityDto)))
     Files.write(entCreatePath.resolve(fileName), jsEntity.getBytes(StandardCharsets.UTF_8))

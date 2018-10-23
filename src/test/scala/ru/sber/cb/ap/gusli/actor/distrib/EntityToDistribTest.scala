@@ -5,7 +5,6 @@ import java.nio.file.Paths
 import ru.sber.cb.ap.gusli.actor.core.ActorBaseTest
 import ru.sber.cb.ap.gusli.actor.core.dto.EntityDto
 import ru.sber.cb.ap.gusli.actor.distrib.EntityToDistrib.EntityWritten
-import concurrent.duration._
 class EntityToDistribTest extends ActorBaseTest("EntityToDistrib") {
   
   val path = Paths.get("./target/mkdistribtest/entity-create-test/")
@@ -17,7 +16,6 @@ class EntityToDistribTest extends ActorBaseTest("EntityToDistrib") {
       "create json entities in distrib" in {
         system.actorOf(EntityToDistrib(path, eDto, self))
         expectMsg(EntityWritten(eDto))
-        println(eDto.children)
         assert(path.toFile.listFiles.size == 6)
       }
     }
