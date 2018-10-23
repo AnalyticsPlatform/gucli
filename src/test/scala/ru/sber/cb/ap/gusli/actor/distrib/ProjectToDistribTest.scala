@@ -4,12 +4,12 @@ import java.nio.file.Paths
 
 import ru.sber.cb.ap.gusli.actor.core.ActorBaseTest
 
-class MakeDisribTest extends ActorBaseTest("MakeDistrib") {
+class ProjectToDistribTest extends ActorBaseTest("MakeDistrib") {
   
   "MakeDisribTest" when {
     val path = Paths.get("./target/mkdistribtest")
     val artName = "art-1"
-    system.actorOf(MakeDisrib(path, artName, self))
+    system.actorOf(ProjectToDistrib(path, artName, self))
     "preStart" should {
       "geg" in {
         import FolderNames._
