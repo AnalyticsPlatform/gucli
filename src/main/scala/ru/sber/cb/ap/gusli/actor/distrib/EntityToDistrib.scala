@@ -38,6 +38,7 @@ class EntityToDistrib(entCreatePath: Path, eDto: EntityDto, receiver: ActorRef) 
   private def writeToDisk(): Unit = {
     val fileName = eDto.id.toString + ".json"
     val jsEntity = Json.prettyPrint(Json.toJson(Entity.fromDto(eDto: EntityDto)))
+    Files.createDirectories(entCreatePath)
     Files.write(entCreatePath.resolve(fileName), jsEntity.getBytes(StandardCharsets.UTF_8))
   }
   
