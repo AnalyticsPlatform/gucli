@@ -18,6 +18,8 @@ case class Entity(
   def toEntityMeta(): EntityMetaDefault = EntityMetaDefault(id, name, path.getOrElse(""), Some(parentId))
 }
 
+/**XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
+
 case class Category(
                     id: Int,
                     name: String,
@@ -30,10 +32,34 @@ object Category {
   def namedCategory(name: String): Category = new Category(-1, name, false, 0, Some(-1), None)
 }
 
+/**XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
+
+object Param {
+  def fromDto(wDto: WorkflowDto): Seq[Param] = {
+    val params = for ((k,v) <- wDto.params) yield Param(Some(-1), k, Some(v))
+    params.toSeq
+  }
+}
+
 case class Param(
   wf_id: Option[Int],
   param: String,
   prior_value: Option[String])
+
+/**XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
+
+object Wf {
+  def fromDto(categoryName: String, wDto: WorkflowDto): Wf = Wf(
+    name = wDto.name,
+    param = Param.fromDto(wDto),
+    scheduled = false,
+    id = -1,
+    category = categoryName,
+    `type` = "principal",
+    engine = "oozie",
+    deleted = false
+  )
+}
 
 case class Wf(
   name: String,
@@ -45,6 +71,8 @@ case class Wf(
   engine: String,
   deleted: Boolean,
   eventAwaitStrategy: Option[String] = Some("or"))
+
+/**XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
 case class WfExt(
   wf: Wf,
@@ -61,10 +89,14 @@ case class WfExt(
   }
 }
 
+/**XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
+
 case class StatValPost(
                         loading_id: Int,
                         entity_id: Int,
                         stat_id: Int,
                         avalue: Array[String])
+
+/**XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
 case class CategoryDto(name: String, workflows: Set[WorkflowDto])
