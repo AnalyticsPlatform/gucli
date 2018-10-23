@@ -93,9 +93,9 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
   
   private def writeWorkflowHdfs(wDto: WorkflowDto): Unit = {
     val path = artifactPath.resolve(apHdfs).resolve("user").resolve("__USER__").resolve(fullCatName).resolve(makeNormalName(wDto.name))
-    writeSqlMap(path, wDto.sql)
+    writeSqlMap(path, wDto.sqlMap)
     writeSqlInit(path, wDto.init)
-    writeSql(path, wDto.sqlMap, wDto.name)
+    writeSql(path, wDto.sql, wDto.name)
   }
   
   private def writeEntityBind(path: Path, wDto: WorkflowDto, wfFileName: String) =
@@ -114,7 +114,7 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
   private def writeSqlMap(path: Path, m: Map[String, String]) = {
     if (m.nonEmpty) {
       Files.createDirectories(path)
-      val content = m.keySet.mkString("\n")
+      val content = m.values.mkString("\n")
       Files.write(path.resolve("sql.map"), content.getBytes(StandardCharsets.UTF_8))
     }
   }
@@ -122,7 +122,7 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
   private def writeSqlInit(path: Path, m: Map[String, String]) = {
     if (m.nonEmpty) {
       Files.createDirectories(path)
-      val content = m.keySet.mkString("; \n")
+      val content = m.values.mkString("; \n")
       Files.write(path.resolve("sql.init"), content.getBytes(StandardCharsets.UTF_8))
     }
   }
@@ -130,7 +130,7 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
   private def writeSql(path: Path, m: Map[String, String], wfName: String) = {
     if (m.nonEmpty) {
       Files.createDirectories(path)
-      val content = m.keySet.mkString("; \n")
+      val content = m.values.mkString("; \n")
       Files.write(path.resolve(wfName), content.getBytes(StandardCharsets.UTF_8))
     }
   }
