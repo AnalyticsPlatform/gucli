@@ -5,7 +5,7 @@ import java.nio.file.Paths
 import ru.sber.cb.ap.gusli.actor.core.ActorBaseTest
 import ru.sber.cb.ap.gusli.actor.core.dto.{CategoryDto, WorkflowDto}
 import ru.sber.cb.ap.gusli.actor.distrib.CategoryToDisrtib.CategoryWritten
-
+import concurrent.duration._
 class CategoryToDisrtibTest extends ActorBaseTest("CategoryToDisrtib") {
   val path = Paths.get("./target/mkdistribtest/cat-create-test/")
   val cDto = createCategoryTree()
@@ -13,8 +13,9 @@ class CategoryToDisrtibTest extends ActorBaseTest("CategoryToDisrtib") {
   "CategoryToDistrib" when {
     "preStart" should {
       "create json entities in distrib" in {
-        system.actorOf(CategoryToDisrtib(path, cDto.name, cDto, self))
-        expectMsg(CategoryWritten(cDto))
+        val root = CategoryDto("root")
+        system.actorOf(CategoryToDisrtib(path, cDto.name, cDto, root, self))
+        expectMsg(3 hours, CategoryWritten(cDto))
         import FolderNames._
         assert(path.resolve(apCtl).resolve(categories).resolve(create).toFile.listFiles.size == 6)
         assert(path.resolve(apCtl).resolve(workflows).resolve(create).toFile.listFiles.size == 7)

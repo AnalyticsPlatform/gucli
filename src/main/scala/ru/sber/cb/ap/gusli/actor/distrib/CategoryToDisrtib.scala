@@ -14,8 +14,8 @@ import ru.sber.cb.ap.gusli.actor.distrib.CategoryToDisrtib.CategoryWritten
 
 object CategoryToDisrtib {
   
-  def apply(path: Path, fullCatName: String, cDto: CategoryDto, receiver: ActorRef): Props =
-    Props(new CategoryToDisrtib(path, fullCatName, cDto, receiver))
+  def apply(path: Path, fullCatName: String, cDto: CategoryDto, parentCDto: CategoryDto, receiver: ActorRef): Props =
+    Props(new CategoryToDisrtib(path, fullCatName, cDto, parentCDto, receiver))
   
   case class CategoryWritten(cDto: CategoryDto) extends Response
   
@@ -28,7 +28,7 @@ object CategoryToDisrtib {
   * @param cDto CategoryDto
   * @param receiver whom to send CategoryWritten Response
   */
-class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryDto, receiver: ActorRef) extends BaseActor {
+class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryDto, parentCDto: CategoryDto, receiver: ActorRef) extends BaseActor {
   
   private val childrenCount = cDto.subcategories.size
   private var writtenChildrenCount = 0
@@ -52,13 +52,13 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
   
   private def writeChildren(): Unit = {
     cDto.subcategories.foreach(c =>
-      context.actorOf(CategoryToDisrtib(artifactPath, fullCatName + s"/${c.name}", c, self)))
+      context.actorOf(CategoryToDisrtib(artifactPath, fullCatName + s"/${c.name}", c, cDto, self)))
   }
   
   private def writeCategory(): Path = {
     val fileName = makeNormalJsonName(fullCatName)
-    val jsEntity = Json.prettyPrint(Json.toJson(Category.namedCategory(fullCatName)))
     val writePath = artifactPath.resolve(apCtl).resolve(categories)resolve(if (cDto.isDeleted) delete else create)
+    val jsEntity = Json.prettyPrint(Json.toJson(Category.namedCategory(fullCatName)))
     Files.createDirectories(writePath)
     Files.write(writePath.resolve(fileName), jsEntity.getBytes(StandardCharsets.UTF_8))
   }
@@ -68,11 +68,11 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
       val wfFileName = makeNormalJsonName(wf.name)
       val wfPath = artifactPath.resolve(apCtl).resolve(workflows).resolve(if (wf.isDeleted) delete else create)
       writeWorkflowJson(wfPath, wf, wfFileName)
-      writeHdfs(wf)
       if (!wf.isDeleted) {
         writeEntityBind(wfPath, wf, wfFileName)
         writeStatBind(wfPath, wf, wfFileName)
       }
+      writeHdfs(wf)
     }
   }
   
@@ -83,7 +83,8 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
   }
   
   private def writeHdfs(wDto: WorkflowDto): Unit = {
-  
+    val path = artifactPath.resolve(apHdfs).resolve("user").resolve("__USER__").resolve(fullCatName)
+    writeMap(wDto.sql)
   }
   
   private def writeEntityBind(path: Path, wDto: WorkflowDto, wfFileName: String) =
@@ -97,6 +98,10 @@ class CategoryToDisrtib(artifactPath: Path, fullCatName: String, cDto: CategoryD
       val s = set.mkString("\n")
       Files.write(path.resolve(fileName), s.getBytes(StandardCharsets.UTF_8))
     }
+  }
+  
+  private def writeMap(stringToString: Map[String, String]) = {
+  
   }
   
   private def makeNormalJsonName(name: String): String = name.replace("/", "~").replace(":", "%3A").trim + ".json"

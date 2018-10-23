@@ -6,6 +6,7 @@ import akka.actor.{ActorRef, Props}
 import ru.sber.cb.ap.gusli.actor.core.diff.ProjectDiffer.{ProjectDelta, ProjectEquals}
 import ru.sber.cb.ap.gusli.actor.{BaseActor, Response}
 import FolderNames._
+import ru.sber.cb.ap.gusli.actor.core.dto.CategoryDto
 
 object ProjectToDistrib {
   
@@ -22,7 +23,8 @@ class ProjectToDistrib(path: Path, name: String, receiver: ActorRef) extends Bas
     case ProjectEquals(curr, prev) => receiver ! ProjectEquals(curr, prev)
     case ProjectDelta(p) =>
       val entPath = artifactPath.resolve(apCtl).resolve(entities).resolve(create)
-      p.categoryRoot.subcategories.foreach(s => context.actorOf(CategoryToDisrtib(artifactPath, s.name, s, self)))
+      val root = CategoryDto("root")
+      p.categoryRoot.subcategories.foreach(s => context.actorOf(CategoryToDisrtib(artifactPath, s.name, s, root, self)))
       p.entityRoot.children.foreach(e => context.actorOf(EntityToDistrib(entPath, p.entityRoot, self)))
   }
   
